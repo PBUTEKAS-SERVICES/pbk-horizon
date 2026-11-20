@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PBK Horizon — Gestion de Stock</title>
+  <title>PBK Horizon — Stock & Ventes</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -11,6 +11,7 @@
       --card: #ffffff;
       --text: #18202c;
       --muted: #5c687a;
+      --default-hint: #8a96a8;
       --primary: #0f4c81;
       --primary-hover: #0a365c;
       --danger: #c62828;
@@ -25,90 +26,82 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      padding: 20px;
+      padding: 16px;
     }
-    .container { max-width: 920px; margin: 0 auto; }
+    .container { max-width: 960px; margin: 0 auto; }
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 12px;
+      margin-bottom: 18px;
     }
     h1 { margin: 0; font-size: 1.5rem; color: var(--primary); }
-    .subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    .subtitle { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 16px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
-    .grid-form {
+    h2 { margin: 0 0 12px; font-size: 1.1rem; color: var(--primary); }
+    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      align-items: end;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
     }
-    label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
-    input {
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
+    input, select {
       width: 100%;
-      padding: 9px 10px;
+      padding: 10px 12px;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 0.95rem;
+      background: #fff;
+      color: var(--text);
+    }
+    input::placeholder {
+      color: var(--default-hint);
+    }
+    input.is-default,
+    select.is-default {
+      color: var(--default-hint);
+      font-style: italic;
     }
     button {
-      padding: 9px 14px;
+      background: var(--primary);
+      color: #fff;
       border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.95rem;
       font-weight: 600;
-      font-size: 0.9rem;
+      cursor: pointer;
     }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-sm { padding: 5px 10px; font-size: 0.85rem; }
-    .btn-plus { background: var(--ok-bg); color: var(--ok); border: 1px solid #b7e1c2; }
-    .btn-minus { background: #fff4e5; color: #9a5b00; border: 1px solid #f5d09c; }
-    .btn-del { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c2c0; }
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-    .search-box { max-width: 280px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td {
-      text-align: left;
-      padding: 10px 8px;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.92rem;
-    }
-    th { color: var(--muted); font-size: 0.82rem; text-transform: uppercase; }
-    .badge-low {
-      background: var(--danger-bg);
-      color: var(--danger);
-      padding: 3px 8px;
+    button:hover { background: var(--primary-hover); }
+    button.secondary { background: #eef2f7; color: var(--text); }
+    button.danger { background: var(--danger-bg); color: var(--danger); padding: 6px 10px; font-size: 0.85rem; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
       border-radius: 999px;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 700;
+      background: #e6eef8;
+      color: var(--primary);
     }
-    .badge-ok {
-      background: var(--ok-bg);
-      color: var(--ok);
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 700;
-    }
-    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
-    #status { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+    .status { margin-top: 10px; font-size: 0.9rem; font-weight: 600; }
+    .status.err { color: var(--danger); }
+    .status.ok { color: var(--ok); }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
+    .hidden { display: none !important; }
+    .pill-low { background: var(--danger-bg); color: var(--danger); padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+    .pill-ok { background: var(--ok-bg); color: var(--ok); padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -116,182 +109,444 @@
     <header>
       <div>
         <h1>PBK Horizon</h1>
-        <div class="subtitle">Suivi du stock en temps réel — PBUTEKAS-SERVICES</div>
+        <p class="subtitle">Gestion de stock et ventes — PBUTEKAS-SERVICES</p>
+      </div>
+      <div id="user-bar" class="hidden" style="display:flex; align-items:center; gap:10px;">
+        <span id="user-role-badge" class="badge"></span>
+        <button id="logout-btn" class="secondary" type="button">Déconnexion</button>
       </div>
     </header>
 
-    <div class="card">
-      <form id="product-form" class="grid-form">
-        <div>
-          <label for="nom">Nom du produit</label>
-          <input id="nom" type="text" placeholder="Ex. CHEMISE" required />
+    <!-- ÉCRAN DE CONNEXION -->
+    <section id="login-section" class="card" style="max-width: 420px; margin: 40px auto;">
+      <h2>Connexion au système</h2>
+      <form id="login-form">
+        <div style="margin-bottom: 12px;">
+          <label for="login-email">Adresse e-mail</label>
+          <input id="login-email" type="email" required placeholder="exemple@pbk.com" />
         </div>
-        <div>
-          <label for="quantite">Quantité initiale</label>
-          <input id="quantite" type="number" min="0" value="0" required />
+        <div style="margin-bottom: 14px;">
+          <label for="login-password">Mot de passe</label>
+          <input id="login-password" type="password" required placeholder="••••••••" />
         </div>
-        <div>
-          <label for="seuil">Seuil d'alerte</label>
-          <input id="seuil" type="number" min="0" value="5" required />
-        </div>
-        <div>
-          <label for="prix">Prix unitaire</label>
-          <input id="prix" type="number" min="0" step="0.01" value="0" required />
-        </div>
-        <div>
-          <button type="submit" class="btn-primary" style="width:100%;">+ Ajouter</button>
-        </div>
+        <button type="submit" style="width: 100%;">Se connecter</button>
+        <div id="login-status" class="status"></div>
       </form>
-      <div id="status">En attente de configuration Supabase...</div>
-    </div>
+    </section>
 
-    <div class="card">
-      <div class="toolbar">
-        <input id="search" class="search-box" type="search" placeholder="Rechercher un produit..." />
-        <button id="refresh-btn" class="btn-sm btn-primary" type="button">Actualiser</button>
+    <!-- ESPACE CONNECTÉ -->
+    <main id="app-section" class="hidden">
+
+      <!-- BLOC VENTE (VISIBLE PAR UTILISATEUR CLASSIQUE ET SUPER ADMIN) -->
+      <section class="card">
+        <h2>Enregistrer un produit vendu</h2>
+        <form id="sale-form">
+          <div class="grid">
+            <div>
+              <label for="sale-product">Produit</label>
+              <select id="sale-product" class="is-default" required>
+                <option value="">Chargement des produits...</option>
+              </select>
+            </div>
+            <div>
+              <label for="sale-qty">Quantité vendue</label>
+              <input id="sale-qty" type="number" min="1" value="1" class="is-default" required />
+            </div>
+            <div>
+              <label for="sale-price">Prix de vente unitaire</label>
+              <input id="sale-price" type="number" min="0" step="0.01" required placeholder="Saisir le prix" />
+            </div>
+          </div>
+          <div style="margin-top: 12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <button type="submit">Valider la vente</button>
+            <span id="sale-preview" style="font-size:0.9rem; color:var(--muted);"></span>
+          </div>
+          <div id="sale-status" class="status"></div>
+        </form>
+      </section>
+
+      <!-- HISTORIQUE DES VENTES -->
+      <section class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <h2 style="margin:0;">Ventes enregistrées</h2>
+          <button id="refresh-sales-btn" class="secondary" type="button">Actualiser</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Produit</th>
+                <th>Qté</th>
+                <th class="admin-only hidden">Prix initial</th>
+                <th>Prix vente</th>
+                <th>Total</th>
+                <th class="admin-only hidden">Action</th>
+              </tr>
+            </thead>
+            <tbody id="sales-body">
+              <tr><td colspan="7">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- GESTION DU STOCK (RÉSERVÉ AU SUPER ADMIN) -->
+      <div id="admin-stock-zone" class="hidden">
+        <section class="card">
+          <h2>Ajouter un produit au stock (Super Admin)</h2>
+          <form id="product-form">
+            <div class="grid">
+              <div>
+                <label for="prod-name">Nom du produit</label>
+                <input id="prod-name" type="text" required placeholder="Ex. Câble HDMI" />
+              </div>
+              <div>
+                <label for="prod-qty">Quantité initiale</label>
+                <input id="prod-qty" type="number" min="0" value="0" class="is-default" required />
+              </div>
+              <div>
+                <label for="prod-init-price">Prix initial (achat/référence)</label>
+                <input id="prod-init-price" type="number" min="0" step="0.01" value="0" class="is-default" required />
+              </div>
+              <div>
+                <label for="prod-alert">Seuil d'alerte</label>
+                <input id="prod-alert" type="number" min="0" value="5" class="is-default" required />
+              </div>
+            </div>
+            <div style="margin-top: 12px;">
+              <button type="submit">+ Ajouter au stock</button>
+            </div>
+            <div id="prod-status" class="status"></div>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Catalogue et stock actuel (Super Admin)</h2>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Stock</th>
+                  <th>Prix initial</th>
+                  <th>État</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="stock-body">
+                <tr><td colspan="5">Chargement...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Produit</th>
-              <th>Quantité</th>
-              <th>Prix</th>
-              <th>État</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="stock-body">
-            <tr><td colspan="5">Chargement...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+
+    </main>
   </div>
 
   <script>
     const SUPABASE_URL = "https://hhqdulyklgmnxuoehfql.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_HFyz52SLbwEPIyoPtkxECQ_oMf6Ydgc";
-
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    let currentRole = "utilisateur";
     let produitsCache = [];
 
-    const statusEl = document.getElementById("status");
-    const tbody = document.getElementById("stock-body");
-    const form = document.getElementById("product-form");
-    const searchInput = document.getElementById("search");
+    const loginSection = document.getElementById("login-section");
+    const appSection = document.getElementById("app-section");
+    const userBar = document.getElementById("user-bar");
+    const roleBadge = document.getElementById("user-role-badge");
+    const adminStockZone = document.getElementById("admin-stock-zone");
 
-    function setStatus(msg, isError = false) {
-      statusEl.textContent = msg;
-      statusEl.style.color = isError ? "#c62828" : "#5c687a";
+    function syncDefaultStyles() {
+      document.querySelectorAll("input.is-default").forEach(inp => {
+        const defaultVal = inp.dataset.defaultVal ?? inp.getAttribute("value") ?? "";
+        if (!inp.dataset.defaultVal) inp.dataset.defaultVal = defaultVal;
+        inp.classList.toggle("is-default", inp.value === defaultVal);
+      });
+      document.querySelectorAll("select.is-default").forEach(sel => {
+        sel.classList.toggle("is-default", sel.value === "");
+      });
     }
 
-    function renderTable() {
-      const filtre = searchInput.value.trim().toLowerCase();
-      const liste = produitsCache.filter(p => p.nom.toLowerCase().includes(filtre));
+    document.querySelectorAll("input").forEach(inp => {
+      if (inp.hasAttribute("value")) {
+        inp.dataset.defaultVal = inp.getAttribute("value");
+      }
+      inp.addEventListener("input", () => {
+        const def = inp.dataset.defaultVal;
+        if (def !== undefined) {
+          inp.classList.toggle("is-default", inp.value === def);
+        }
+      });
+    });
 
-      if (!liste.length) {
-        tbody.innerHTML = '<tr><td colspan="5">Aucun produit trouvé.</td></tr>';
+    document.querySelectorAll("select").forEach(sel => {
+      sel.addEventListener("change", () => {
+        sel.classList.toggle("is-default", sel.value === "");
+      });
+    });
+
+    function setStatus(el, msg, isErr = false) {
+      el.textContent = msg;
+      el.className = "status " + (msg ? (isErr ? "err" : "ok") : "");
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "").replace(/[&<>"']/g, s => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[s]));
+    }
+
+    async function initSession() {
+      syncDefaultStyles();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        loginSection.classList.remove("hidden");
+        appSection.classList.add("hidden");
+        userBar.classList.add("hidden");
+        return;
+      }
+      currentUser = session.user;
+      const { data: profil } = await sb
+        .from("profils")
+        .select("role")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+
+      currentRole = profil?.role === "super_admin" ? "super_admin" : "utilisateur";
+
+      loginSection.classList.add("hidden");
+      appSection.classList.remove("hidden");
+      userBar.classList.remove("hidden");
+      roleBadge.textContent = currentRole === "super_admin" ? "Super Admin" : "Utilisateur";
+
+      document.querySelectorAll(".admin-only").forEach(el => {
+        el.classList.toggle("hidden", currentRole !== "super_admin");
+      });
+      adminStockZone.classList.toggle("hidden", currentRole !== "super_admin");
+
+      await chargerProduits();
+      await chargerVentes();
+    }
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const statusEl = document.getElementById("login-status");
+      setStatus(statusEl, "Connexion en cours...");
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
+
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        setStatus(statusEl, "Échec de connexion : " + error.message, true);
+        return;
+      }
+      setStatus(statusEl, "");
+      await initSession();
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await sb.auth.signOut();
+      await initSession();
+    });
+
+    async function chargerProduits() {
+      const { data, error } = await sb
+        .from("produits")
+        .select("*")
+        .order("nom", { ascending: true });
+
+      if (error) {
+        setStatus(document.getElementById("sale-status"), "Erreur produits : " + error.message, true);
+        return;
+      }
+      produitsCache = data || [];
+
+      const select = document.getElementById("sale-product");
+      select.innerHTML = '<option value="">-- Sélectionner un produit --</option>' +
+        produitsCache.map(p =>
+          `<option value="${p.id}">${escapeHtml(p.nom)} (Dispo : ${p.quantite})</option>`
+        ).join("");
+      select.classList.toggle("is-default", select.value === "");
+
+      if (currentRole === "super_admin") {
+        const stockBody = document.getElementById("stock-body");
+        if (!produitsCache.length) {
+          stockBody.innerHTML = '<tr><td colspan="5">Aucun produit en stock.</td></tr>';
+        } else {
+          stockBody.innerHTML = produitsCache.map(p => {
+            const bas = Number(p.quantite) <= Number(p.seuil_alerte ?? 5);
+            return `
+              <tr>
+                <td><strong>${escapeHtml(p.nom)}</strong></td>
+                <td>${p.quantite}</td>
+                <td>${Number(p.prix_initial ?? p.prix ?? 0).toFixed(2)}</td>
+                <td>${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">OK</span>'}</td>
+                <td>
+                  <button class="secondary" type="button" onclick="ajustStock(${p.id}, ${Number(p.quantite) + 1})">+1</button>
+                  <button class="danger" type="button" onclick="supprimerProduit(${p.id})">Supprimer</button>
+                </td>
+              </tr>
+            `;
+          }).join("");
+        }
+      }
+    }
+
+    function updateSalePreview() {
+      const qty = Number(document.getElementById("sale-qty").value) || 0;
+      const price = Number(document.getElementById("sale-price").value) || 0;
+      document.getElementById("sale-preview").textContent =
+        qty > 0 && price >= 0 ? `Total : ${(qty * price).toFixed(2)}` : "";
+    }
+    document.getElementById("sale-qty").addEventListener("input", updateSalePreview);
+    document.getElementById("sale-price").addEventListener("input", updateSalePreview);
+
+    document.getElementById("sale-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const statusEl = document.getElementById("sale-status");
+      const prodId = Number(document.getElementById("sale-product").value);
+      const qty = Number(document.getElementById("sale-qty").value);
+      const prixVente = Number(document.getElementById("sale-price").value);
+
+      const produit = produitsCache.find(p => Number(p.id) === prodId);
+      if (!produit) {
+        setStatus(statusEl, "Veuillez sélectionner un produit valide.", true);
+        return;
+      }
+      if (qty <= 0 || qty > Number(produit.quantite)) {
+        setStatus(statusEl, `Stock insuffisant (disponible : ${produit.quantite}).`, true);
         return;
       }
 
-      tbody.innerHTML = liste.map(p => {
-        const estBas = Number(p.quantite) <= Number(p.seuil_alerte);
-        const badge = estBas
-          ? `<span class="badge-low">Stock bas (≤ ${p.seuil_alerte})</span>`
-          : `<span class="badge-ok">OK</span>`;
+      setStatus(statusEl, "Validation de la vente...");
+      const prixInit = Number(produit.prix_initial ?? produit.prix ?? 0);
+      const totalVente = qty * prixVente;
+
+      const { error: saleErr } = await sb.from("ventes").insert([{
+        produit_id: produit.id,
+        nom_produit: produit.nom,
+        quantite_vendue: qty,
+        prix_initial: prixInit,
+        prix_vente: prixVente,
+        total_vente: totalVente,
+        vendu_par: currentUser.id
+      }]);
+
+      if (saleErr) {
+        setStatus(statusEl, "Erreur d'enregistrement : " + saleErr.message, true);
+        return;
+      }
+
+      const nouveauStock = Number(produit.quantite) - qty;
+      const { error: stockErr } = await sb
+        .from("produits")
+        .update({ quantite: nouveauStock })
+        .eq("id", produit.id);
+
+      if (stockErr) {
+        setStatus(statusEl, "Vente ajoutée, mais erreur mise à jour stock : " + stockErr.message, true);
+        return;
+      }
+
+      document.getElementById("sale-form").reset();
+      document.getElementById("sale-qty").value = 1;
+      document.getElementById("sale-preview").textContent = "";
+      syncDefaultStyles();
+      setStatus(statusEl, "Vente validée et verrouillée.");
+      await chargerProduits();
+      await chargerVentes();
+    });
+
+    async function chargerVentes() {
+      const salesBody = document.getElementById("sales-body");
+      const { data, error } = await sb
+        .from("ventes")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) {
+        salesBody.innerHTML = `<tr><td colspan="7">Erreur : ${escapeHtml(error.message)}</td></tr>`;
+        return;
+      }
+      if (!data || !data.length) {
+        salesBody.innerHTML = '<tr><td colspan="7">Aucune vente enregistrée.</td></tr>';
+        return;
+      }
+
+      salesBody.innerHTML = data.map(v => {
+        const dt = new Date(v.created_at).toLocaleString("fr-FR", {
+          day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
+        });
         return `
           <tr>
-            <td><strong>${escapeHtml(p.nom)}</strong></td>
-            <td><strong>${p.quantite}</strong></td>
-            <td>${Number(p.prix).toFixed(2)}</td>
-            <td>${badge}</td>
-            <td>
-              <div class="actions">
-                <button class="btn-sm btn-plus" onclick="changerQuantite(${p.id}, ${Number(p.quantite) + 1})">+1</button>
-                <button class="btn-sm btn-minus" onclick="changerQuantite(${p.id}, ${Math.max(0, Number(p.quantite) - 1)})">-1</button>
-                <button class="btn-sm btn-del" onclick="supprimerProduit(${p.id})">Supprimer</button>
-              </div>
-            </td>
+            <td>${dt}</td>
+            <td><strong>${escapeHtml(v.nom_produit)}</strong></td>
+            <td>${v.quantite_vendue}</td>
+            ${currentRole === "super_admin" ? `<td>${Number(v.prix_initial ?? 0).toFixed(2)}</td>` : ""}
+            <td>${Number(v.prix_vente).toFixed(2)}</td>
+            <td><strong>${Number(v.total_vente).toFixed(2)}</strong></td>
+            ${currentRole === "super_admin" ? `<td><button class="danger" type="button" onclick="supprimerVente(${v.id})">Supprimer</button></td>` : ""}
           </tr>
         `;
       }).join("");
     }
 
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
+    document.getElementById("refresh-sales-btn").addEventListener("click", chargerVentes);
 
-    async function chargerProduits() {
-      if (SUPABASE_ANON_KEY === "VOTRE_CLE_ANON_PUBLIC") {
-        setStatus("Collez votre clé anon public dans SUPABASE_ANON_KEY.", true);
-        tbody.innerHTML = '<tr><td colspan="5">Clé anon public requise.</td></tr>';
-        return;
-      }
-      setStatus("Synchronisation avec Supabase...");
-      const { data, error } = await sb
-        .from("produits")
-        .select("*")
-        .order("id", { ascending: false });
-
-      if (error) {
-        setStatus("Erreur de chargement : " + error.message, true);
-        return;
-      }
-      produitsCache = data || [];
-      setStatus("Connecté à Supabase (" + produitsCache.length + " produit(s)).");
-      renderTable();
-    }
-
-    form.addEventListener("submit", async (e) => {
+    document.getElementById("product-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const nom = document.getElementById("nom").value.trim();
-      const quantite = parseInt(document.getElementById("quantite").value, 10) || 0;
-      const seuil_alerte = parseInt(document.getElementById("seuil").value, 10) || 0;
-      const prix = parseFloat(document.getElementById("prix").value) || 0;
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("prod-status");
+      const nom = document.getElementById("prod-name").value.trim();
+      const quantite = Number(document.getElementById("prod-qty").value);
+      const prixInitial = Number(document.getElementById("prod-init-price").value);
+      const seuilAlerte = Number(document.getElementById("prod-alert").value);
 
-      if (!nom) return;
-      const { error } = await sb.from("produits").insert([{ nom, quantite, seuil_alerte, prix }]);
+      const { error } = await sb.from("produits").insert([{
+        nom,
+        quantite,
+        prix_initial: prixInitial,
+        prix: prixInitial,
+        seuil_alerte: seuilAlerte
+      }]);
+
       if (error) {
-        setStatus("Erreur ajout : " + error.message, true);
+        setStatus(statusEl, "Erreur ajout produit : " + error.message, true);
         return;
       }
-      form.reset();
-      document.getElementById("quantite").value = 0;
-      document.getElementById("seuil").value = 5;
-      document.getElementById("prix").value = 0;
+      document.getElementById("product-form").reset();
+      document.getElementById("prod-qty").value = 0;
+      document.getElementById("prod-init-price").value = 0;
+      document.getElementById("prod-alert").value = 5;
+      syncDefaultStyles();
+      setStatus(statusEl, "Produit ajouté au catalogue.");
       await chargerProduits();
     });
 
-    async function changerQuantite(id, nouvelleQuantite) {
-      const { error } = await sb
-        .from("produits")
-        .update({ quantite: nouvelleQuantite })
-        .eq("id", id);
-      if (error) {
-        setStatus("Erreur mise à jour : " + error.message, true);
-        return;
-      }
+    window.ajustStock = async (id, nouvelleQte) => {
+      if (currentRole !== "super_admin") return;
+      await sb.from("produits").update({ quantite: nouvelleQte }).eq("id", id);
       await chargerProduits();
-    }
+    };
 
-    async function supprimerProduit(id) {
-      const { error } = await sb.from("produits").delete().eq("id", id);
-      if (error) {
-        setStatus("Erreur suppression : " + error.message, true);
-        return;
-      }
+    window.supprimerProduit = async (id) => {
+      if (currentRole !== "super_admin") return;
+      await sb.from("produits").delete().eq("id", id);
       await chargerProduits();
-    }
+    };
 
-    searchInput.addEventListener("input", renderTable);
-    document.getElementById("refresh-btn").addEventListener("click", chargerProduits);
+    window.supprimerVente = async (id) => {
+      if (currentRole !== "super_admin") return;
+      await sb.from("ventes").delete().eq("id", id);
+      await chargerVentes();
+    };
 
-    chargerProduits();
+    initSession();
   </script>
 </body>
 </html>
