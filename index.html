@@ -28,7 +28,7 @@
       color: var(--text);
       padding: 16px;
     }
-    .container { max-width: 960px; margin: 0 auto; }
+    .container { max-width: 1020px; margin: 0 auto; }
     header {
       display: flex;
       justify-content: space-between;
@@ -46,6 +46,21 @@
       padding: 16px;
       margin-bottom: 16px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .alert-banner {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid #f5c2c0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    .info-line {
+      margin-top: 8px;
+      font-size: 0.88rem;
+      color: var(--muted);
     }
     h2 { margin: 0 0 12px; font-size: 1.1rem; color: var(--primary); }
     .grid {
@@ -71,6 +86,12 @@
       color: var(--default-hint);
       font-style: italic;
     }
+    .seuil-inline {
+      width: 78px;
+      padding: 6px 8px;
+      font-size: 0.88rem;
+      display: inline-block;
+    }
     button {
       background: var(--primary);
       color: #fff;
@@ -82,7 +103,7 @@
       cursor: pointer;
     }
     button:hover { background: var(--primary-hover); }
-    button.secondary { background: #eef2f7; color: var(--text); }
+    button.secondary { background: #eef2f7; color: var(--text); padding: 6px 10px; font-size: 0.85rem; }
     button.danger { background: var(--danger-bg); color: var(--danger); padding: 6px 10px; font-size: 0.85rem; }
     .badge {
       display: inline-block;
@@ -97,7 +118,7 @@
     .status.err { color: var(--danger); }
     .status.ok { color: var(--ok); }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.92rem; }
-    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
     .hidden { display: none !important; }
     .pill-low { background: var(--danger-bg); color: var(--danger); padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
@@ -111,11 +132,16 @@
         <h1>PBK Horizon</h1>
         <p class="subtitle">Gestion de stock et ventes — PBUTEKAS-SERVICES</p>
       </div>
-      <div id="user-bar" class="hidden" style="display:flex; align-items:center; gap:10px;">
+      <div id="user-bar" class="hidden" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span id="user-email-label" style="font-size:0.85rem; color:var(--muted);"></span>
         <span id="user-role-badge" class="badge"></span>
         <button id="logout-btn" class="secondary" type="button">Déconnexion</button>
       </div>
     </header>
+
+    <!-- ALERTE RÔLE OU STOCK BAS -->
+    <div id="role-warning" class="alert-banner hidden"></div>
+    <div id="low-stock-banner" class="alert-banner hidden"></div>
 
     <!-- ÉCRAN DE CONNEXION -->
     <section id="login-section" class="card" style="max-width: 420px; margin: 40px auto;">
@@ -137,7 +163,7 @@
     <!-- ESPACE CONNECTÉ -->
     <main id="app-section" class="hidden">
 
-      <!-- BLOC VENTE (VISIBLE PAR UTILISATEUR CLASSIQUE ET SUPER ADMIN) -->
+      <!-- BLOC VENTE (UTILISATEUR CLASSIQUE ET SUPER ADMIN) -->
       <section class="card">
         <h2>Enregistrer un produit vendu</h2>
         <form id="sale-form">
@@ -157,12 +183,33 @@
               <input id="sale-price" type="number" min="0" step="0.01" required placeholder="Saisir le prix" />
             </div>
           </div>
+          <div id="sale-product-threshold" class="info-line">Seuil d'alerte du produit : —</div>
           <div style="margin-top: 12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
             <button type="submit">Valider la vente</button>
             <span id="sale-preview" style="font-size:0.9rem; color:var(--muted);"></span>
           </div>
           <div id="sale-status" class="status"></div>
         </form>
+      </section>
+
+      <!-- APERÇU SEUIL D'ALERTE POUR L'UTILISATEUR CLASSIQUE -->
+      <section id="user-thresholds-card" class="card hidden">
+        <h2>Seuils d'alerte des produits</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Produit</th>
+                <th>Stock dispo</th>
+                <th>Seuil d'alerte</th>
+                <th>État</th>
+              </tr>
+            </thead>
+            <tbody id="user-thresholds-body">
+              <tr><td colspan="4">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <!-- HISTORIQUE DES VENTES -->
@@ -191,7 +238,7 @@
         </div>
       </section>
 
-      <!-- GESTION DU STOCK (RÉSERVÉ AU SUPER ADMIN) -->
+      <!-- GESTION DU STOCK ET SEUIL D'ALERTE (RÉSERVÉ AU SUPER ADMIN) -->
       <div id="admin-stock-zone" class="hidden">
         <section class="card">
           <h2>Ajouter un produit au stock (Super Admin)</h2>
@@ -222,23 +269,25 @@
         </section>
 
         <section class="card">
-          <h2>Catalogue et stock actuel (Super Admin)</h2>
+          <h2>Catalogue, seuil d'alerte et stock actuel (Super Admin)</h2>
           <div style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
                   <th>Produit</th>
                   <th>Stock</th>
+                  <th>Seuil d'alerte</th>
                   <th>Prix initial</th>
                   <th>État</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="stock-body">
-                <tr><td colspan="5">Chargement...</td></tr>
+                <tr><td colspan="6">Chargement...</td></tr>
               </tbody>
             </table>
           </div>
+          <div id="stock-table-status" class="status"></div>
         </section>
       </div>
 
@@ -258,7 +307,11 @@
     const appSection = document.getElementById("app-section");
     const userBar = document.getElementById("user-bar");
     const roleBadge = document.getElementById("user-role-badge");
+    const userEmailLabel = document.getElementById("user-email-label");
+    const userThresholdsCard = document.getElementById("user-thresholds-card");
     const adminStockZone = document.getElementById("admin-stock-zone");
+    const roleWarning = document.getElementById("role-warning");
+    const lowStockBanner = document.getElementById("low-stock-banner");
 
     function syncDefaultStyles() {
       document.querySelectorAll("input.is-default").forEach(inp => {
@@ -300,8 +353,26 @@
       }[s]));
     }
 
+    function updateSelectedProductThreshold() {
+      const el = document.getElementById("sale-product-threshold");
+      const prodId = Number(document.getElementById("sale-product").value);
+      const produit = produitsCache.find(p => Number(p.id) === prodId);
+      if (!produit) {
+        el.textContent = "Seuil d'alerte du produit : —";
+        return;
+      }
+      const seuil = Number(produit.seuil_alerte ?? 5);
+      const bas = Number(produit.quantite) <= seuil;
+      el.innerHTML = `Seuil d'alerte de <strong>${escapeHtml(produit.nom)}</strong> : <strong>${seuil}</strong> ${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">Normal</span>'}`;
+    }
+
+    document.getElementById("sale-product").addEventListener("change", updateSelectedProductThreshold);
+
     async function initSession() {
       syncDefaultStyles();
+      roleWarning.classList.add("hidden");
+      lowStockBanner.classList.add("hidden");
+
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
         loginSection.classList.remove("hidden");
@@ -309,12 +380,23 @@
         userBar.classList.add("hidden");
         return;
       }
+
       currentUser = session.user;
-      const { data: profil } = await sb
+      userEmailLabel.textContent = currentUser.email || "";
+
+      const { data: profil, error: profilErr } = await sb
         .from("profils")
         .select("role")
         .eq("id", currentUser.id)
         .maybeSingle();
+
+      if (profilErr) {
+        roleWarning.textContent = "Attention : impossible de lire le rôle dans profils (" + profilErr.message + ").";
+        roleWarning.classList.remove("hidden");
+      } else if (!profil) {
+        roleWarning.textContent = "Attention : aucun profil trouvé pour cet UID (" + currentUser.id + "). Rôle 'utilisateur' appliqué par défaut.";
+        roleWarning.classList.remove("hidden");
+      }
 
       currentRole = profil?.role === "super_admin" ? "super_admin" : "utilisateur";
 
@@ -327,6 +409,7 @@
         el.classList.toggle("hidden", currentRole !== "super_admin");
       });
       adminStockZone.classList.toggle("hidden", currentRole !== "super_admin");
+      userThresholdsCard.classList.toggle("hidden", currentRole === "super_admin");
 
       await chargerProduits();
       await chargerVentes();
@@ -368,23 +451,62 @@
       const select = document.getElementById("sale-product");
       select.innerHTML = '<option value="">-- Sélectionner un produit --</option>' +
         produitsCache.map(p =>
-          `<option value="${p.id}">${escapeHtml(p.nom)} (Dispo : ${p.quantite})</option>`
+          `<option value="${p.id}">${escapeHtml(p.nom)} (Dispo : ${p.quantite} | Seuil : ${Number(p.seuil_alerte ?? 5)})</option>`
         ).join("");
       select.classList.toggle("is-default", select.value === "");
+      updateSelectedProductThreshold();
 
-      if (currentRole === "super_admin") {
-        const stockBody = document.getElementById("stock-body");
+      if (currentRole !== "super_admin") {
+        const userBody = document.getElementById("user-thresholds-body");
         if (!produitsCache.length) {
-          stockBody.innerHTML = '<tr><td colspan="5">Aucun produit en stock.</td></tr>';
+          userBody.innerHTML = '<tr><td colspan="4">Aucun produit disponible.</td></tr>';
         } else {
-          stockBody.innerHTML = produitsCache.map(p => {
-            const bas = Number(p.quantite) <= Number(p.seuil_alerte ?? 5);
+          userBody.innerHTML = produitsCache.map(p => {
+            const seuil = Number(p.seuil_alerte ?? 5);
+            const bas = Number(p.quantite) <= seuil;
             return `
               <tr>
                 <td><strong>${escapeHtml(p.nom)}</strong></td>
                 <td>${p.quantite}</td>
+                <td>${seuil}</td>
+                <td>${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">Normal</span>'}</td>
+              </tr>
+            `;
+          }).join("");
+        }
+      }
+
+      if (currentRole === "super_admin") {
+        const produitsEnAlerte = produitsCache.filter(
+          p => Number(p.quantite) <= Number(p.seuil_alerte ?? 5)
+        );
+        if (produitsEnAlerte.length > 0) {
+          const noms = produitsEnAlerte
+            .map(p => `${p.nom} (${p.quantite}/${p.seuil_alerte ?? 5})`)
+            .join(", ");
+          lowStockBanner.textContent = `Alerte stock bas (${produitsEnAlerte.length}) : ${noms}`;
+          lowStockBanner.classList.remove("hidden");
+        } else {
+          lowStockBanner.classList.add("hidden");
+        }
+
+        const stockBody = document.getElementById("stock-body");
+        if (!produitsCache.length) {
+          stockBody.innerHTML = '<tr><td colspan="6">Aucun produit en stock.</td></tr>';
+        } else {
+          stockBody.innerHTML = produitsCache.map(p => {
+            const seuil = Number(p.seuil_alerte ?? 5);
+            const bas = Number(p.quantite) <= seuil;
+            return `
+              <tr>
+                <td><strong>${escapeHtml(p.nom)}</strong></td>
+                <td>${p.quantite}</td>
+                <td>
+                  <input id="seuil-input-${p.id}" class="seuil-inline" type="number" min="0" value="${seuil}" />
+                  <button class="secondary" type="button" onclick="majSeuil(${p.id})">OK</button>
+                </td>
                 <td>${Number(p.prix_initial ?? p.prix ?? 0).toFixed(2)}</td>
-                <td>${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">OK</span>'}</td>
+                <td>${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">Normal</span>'}</td>
                 <td>
                   <button class="secondary" type="button" onclick="ajustStock(${p.id}, ${Number(p.quantite) + 1})">+1</button>
                   <button class="danger" type="button" onclick="supprimerProduit(${p.id})">Supprimer</button>
@@ -527,6 +649,20 @@
       setStatus(statusEl, "Produit ajouté au catalogue.");
       await chargerProduits();
     });
+
+    window.majSeuil = async (id) => {
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("stock-table-status");
+      const val = Number(document.getElementById(`seuil-input-${id}`).value);
+      if (val < 0) return;
+      const { error } = await sb.from("produits").update({ seuil_alerte: val }).eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur mise à jour seuil : " + error.message, true);
+        return;
+      }
+      setStatus(statusEl, "Seuil d'alerte mis à jour.");
+      await chargerProduits();
+    };
 
     window.ajustStock = async (id, nouvelleQte) => {
       if (currentRole !== "super_admin") return;
