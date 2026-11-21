@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PBK Horizon — Stock & Ventes</title>
+  <title>PBK Horizon</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -28,7 +28,7 @@
       color: var(--text);
       padding: 16px;
     }
-    .container { max-width: 1020px; margin: 0 auto; }
+    .container { max-width: 1080px; margin: 0 auto; }
     header {
       display: flex;
       justify-content: space-between;
@@ -38,7 +38,6 @@
       margin-bottom: 18px;
     }
     h1 { margin: 0; font-size: 1.5rem; color: var(--primary); }
-    .subtitle { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -57,11 +56,6 @@
       font-size: 0.92rem;
       font-weight: 600;
     }
-    .info-line {
-      margin-top: 8px;
-      font-size: 0.88rem;
-      color: var(--muted);
-    }
     h2 { margin: 0 0 12px; font-size: 1.1rem; color: var(--primary); }
     .grid {
       display: grid;
@@ -77,20 +71,48 @@
       font-size: 0.95rem;
       background: #fff;
       color: var(--text);
+      font-style: normal;
     }
     input::placeholder {
       color: var(--default-hint);
+      font-style: italic;
     }
-    input.is-default,
-    select.is-default {
+    input.is-empty,
+    select.is-empty {
       color: var(--default-hint);
       font-style: italic;
     }
-    .seuil-inline {
+    .small-input {
       width: 78px;
       padding: 6px 8px;
       font-size: 0.88rem;
       display: inline-block;
+    }
+    .action-row {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .row-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .tabs {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
     }
     button {
       background: var(--primary);
@@ -114,15 +136,28 @@
       background: #e6eef8;
       color: var(--primary);
     }
-    .status { margin-top: 10px; font-size: 0.9rem; font-weight: 600; }
+    .status { margin-top: 10px; font-size: 0.9rem; font-weight: 600; text-align: right; }
     .status.err { color: var(--danger); }
     .status.ok { color: var(--ok); }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.92rem; }
     th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th.right, td.right { text-align: right; }
     th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
     .hidden { display: none !important; }
     .pill-low { background: var(--danger-bg); color: var(--danger); padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
     .pill-ok { background: var(--ok-bg); color: var(--ok); padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+    .summary-box {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #f4f6f9;
+      border: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -130,7 +165,6 @@
     <header>
       <div>
         <h1>PBK Horizon</h1>
-        <p class="subtitle">Gestion de stock et ventes — PBUTEKAS-SERVICES</p>
       </div>
       <div id="user-bar" class="hidden" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <span id="user-email-label" style="font-size:0.85rem; color:var(--muted);"></span>
@@ -139,23 +173,24 @@
       </div>
     </header>
 
-    <!-- ALERTE RÔLE OU STOCK BAS -->
     <div id="role-warning" class="alert-banner hidden"></div>
     <div id="low-stock-banner" class="alert-banner hidden"></div>
 
     <!-- ÉCRAN DE CONNEXION -->
     <section id="login-section" class="card" style="max-width: 420px; margin: 40px auto;">
-      <h2>Connexion au système</h2>
+      <h2>Connexion</h2>
       <form id="login-form">
         <div style="margin-bottom: 12px;">
           <label for="login-email">Adresse e-mail</label>
-          <input id="login-email" type="email" required placeholder="exemple@pbk.com" />
+          <input id="login-email" type="email" required placeholder="Saisir l'adresse e-mail" />
         </div>
         <div style="margin-bottom: 14px;">
           <label for="login-password">Mot de passe</label>
-          <input id="login-password" type="password" required placeholder="••••••••" />
+          <input id="login-password" type="password" required placeholder="Saisir le mot de passe" />
         </div>
-        <button type="submit" style="width: 100%;">Se connecter</button>
+        <div class="action-row">
+          <button type="submit" style="width: 100%;">Se connecter</button>
+        </div>
         <div id="login-status" class="status"></div>
       </form>
     </section>
@@ -163,123 +198,167 @@
     <!-- ESPACE CONNECTÉ -->
     <main id="app-section" class="hidden">
 
-      <!-- BLOC VENTE (UTILISATEUR CLASSIQUE ET SUPER ADMIN) -->
-      <section class="card">
-        <h2>Enregistrer un produit vendu</h2>
-        <form id="sale-form">
-          <div class="grid">
-            <div>
-              <label for="sale-product">Produit</label>
-              <select id="sale-product" class="is-default" required>
-                <option value="">Chargement des produits...</option>
-              </select>
+      <!-- NAVIGATION PAR PAGE POUR LE SUPER ADMIN -->
+      <nav id="admin-page-nav" class="tabs hidden">
+        <button id="tab-ventes-btn" class="secondary tab-btn active" type="button">Page Ventes</button>
+        <button id="tab-stock-btn" class="secondary tab-btn" type="button">Page Ajout & Catalogue</button>
+      </nav>
+
+      <!-- PAGE VENTES (UTILISATEUR CLASSIQUE ET SUPER ADMIN) -->
+      <div id="page-ventes">
+        <section class="card">
+          <h2>Enregistrer une vente (plusieurs produits possibles)</h2>
+          <form id="cart-add-form">
+            <div class="grid">
+              <div>
+                <label for="sale-product">Produit</label>
+                <select id="sale-product" class="is-empty">
+                  <option value="">Sélectionner un produit</option>
+                </select>
+              </div>
+              <div>
+                <label for="sale-qty">Quantité vendue</label>
+                <input id="sale-qty" type="number" min="1" step="1" placeholder="Saisir la quantité" />
+              </div>
+              <div>
+                <label for="sale-price">Prix de vente unitaire</label>
+                <input id="sale-price" type="number" min="0" step="0.01" placeholder="Saisir le prix" />
+              </div>
             </div>
-            <div>
-              <label for="sale-qty">Quantité vendue</label>
-              <input id="sale-qty" type="number" min="1" value="1" class="is-default" required />
+            <div class="action-row">
+              <button id="add-to-cart-btn" class="secondary" type="button">+ Ajouter à la vente</button>
             </div>
-            <div>
-              <label for="sale-price">Prix de vente unitaire</label>
-              <input id="sale-price" type="number" min="0" step="0.01" required placeholder="Saisir le prix" />
-            </div>
+            <div id="cart-status" class="status"></div>
+          </form>
+
+          <div style="overflow-x:auto; margin-top: 12px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Qté</th>
+                  <th>Prix vente</th>
+                  <th>Total ligne</th>
+                  <th class="right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="cart-body">
+                <tr><td colspan="5">Aucun produit ajouté à la vente.</td></tr>
+              </tbody>
+            </table>
           </div>
-          <div id="sale-product-threshold" class="info-line">Seuil d'alerte du produit : —</div>
-          <div style="margin-top: 12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-            <button type="submit">Valider la vente</button>
-            <span id="sale-preview" style="font-size:0.9rem; color:var(--muted);"></span>
+
+          <div class="action-row">
+            <span id="sale-preview" style="font-size:0.92rem; font-weight:600;"></span>
+            <button id="validate-sale-btn" type="button">Valider la vente</button>
           </div>
           <div id="sale-status" class="status"></div>
-        </form>
-      </section>
+        </section>
 
-      <!-- APERÇU SEUIL D'ALERTE POUR L'UTILISATEUR CLASSIQUE -->
-      <section id="user-thresholds-card" class="card hidden">
-        <h2>Seuils d'alerte des produits</h2>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Produit</th>
-                <th>Stock dispo</th>
-                <th>Seuil d'alerte</th>
-                <th>État</th>
-              </tr>
-            </thead>
-            <tbody id="user-thresholds-body">
-              <tr><td colspan="4">Chargement...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+        <!-- SEUILS D'ALERTE POUR L'UTILISATEUR CLASSIQUE -->
+        <section id="user-thresholds-card" class="card hidden">
+          <h2>Seuils d'alerte des produits</h2>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Stock dispo</th>
+                  <th>Seuil d'alerte</th>
+                  <th>État</th>
+                </tr>
+              </thead>
+              <tbody id="user-thresholds-body">
+                <tr><td colspan="4">Chargement...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-      <!-- HISTORIQUE DES VENTES -->
-      <section class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <h2 style="margin:0;">Ventes enregistrées</h2>
-          <button id="refresh-sales-btn" class="secondary" type="button">Actualiser</button>
-        </div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Produit</th>
-                <th>Qté</th>
-                <th class="admin-only hidden">Prix initial</th>
-                <th>Prix vente</th>
-                <th>Total</th>
-                <th class="admin-only hidden">Action</th>
-              </tr>
-            </thead>
-            <tbody id="sales-body">
-              <tr><td colspan="7">Chargement...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- GESTION DU STOCK ET SEUIL D'ALERTE (RÉSERVÉ AU SUPER ADMIN) -->
-      <div id="admin-stock-zone" class="hidden">
+        <!-- HISTORIQUE DES VENTES + SOMME DES VENTES ET GAINS -->
         <section class="card">
-          <h2>Ajouter un produit au stock (Super Admin)</h2>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <h2 style="margin:0;">Ventes enregistrées</h2>
+            <div class="row-actions">
+              <input id="summary-date" type="date" style="width:auto; padding:6px 10px; font-size:0.85rem;" />
+              <button id="calc-summary-btn" class="secondary" type="button">Somme ventes & gains</button>
+              <button id="refresh-sales-btn" class="secondary" type="button">Actualiser</button>
+            </div>
+          </div>
+
+          <div id="sales-summary-box" class="summary-box hidden">
+            <span id="summary-scope"></span>
+            <span id="summary-total-sold"></span>
+            <span id="summary-total-gain"></span>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Produit</th>
+                  <th>Qté</th>
+                  <th class="admin-only hidden">Prix initial</th>
+                  <th>Prix vente</th>
+                  <th>Total</th>
+                  <th class="admin-only hidden right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="sales-body">
+                <tr><td colspan="7">Chargement...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- PAGE AJOUT & CATALOGUE (SUPER ADMIN UNIQUEMENT) -->
+      <div id="page-admin-stock" class="hidden">
+        <section class="card">
+          <h2>Ajouter un produit au stock</h2>
           <form id="product-form">
             <div class="grid">
               <div>
                 <label for="prod-name">Nom du produit</label>
-                <input id="prod-name" type="text" required placeholder="Ex. Câble HDMI" />
+                <input id="prod-name" type="text" required placeholder="Saisir le nom du produit" />
               </div>
               <div>
                 <label for="prod-qty">Quantité initiale</label>
-                <input id="prod-qty" type="number" min="0" value="0" class="is-default" required />
+                <input id="prod-qty" type="number" min="0" step="1" required placeholder="Saisir la quantité" />
               </div>
               <div>
-                <label for="prod-init-price">Prix initial (achat/référence)</label>
-                <input id="prod-init-price" type="number" min="0" step="0.01" value="0" class="is-default" required />
+                <label for="prod-init-price">Prix initial</label>
+                <input id="prod-init-price" type="number" min="0" step="0.01" required placeholder="Saisir le prix initial" />
               </div>
               <div>
                 <label for="prod-alert">Seuil d'alerte</label>
-                <input id="prod-alert" type="number" min="0" value="5" class="is-default" required />
+                <input id="prod-alert" type="number" min="0" step="1" required placeholder="Saisir le seuil d'alerte" />
+              </div>
+              <div>
+                <label for="prod-admin-pass">Mot de passe Super Admin</label>
+                <input id="prod-admin-pass" type="password" required placeholder="Saisir le mot de passe" />
               </div>
             </div>
-            <div style="margin-top: 12px;">
-              <button type="submit">+ Ajouter au stock</button>
+            <div class="action-row">
+              <button type="submit">Valider l'ajout</button>
             </div>
             <div id="prod-status" class="status"></div>
           </form>
         </section>
 
         <section class="card">
-          <h2>Catalogue, seuil d'alerte et stock actuel (Super Admin)</h2>
+          <h2>Catalogue, seuil d'alerte et stock actuel</h2>
           <div style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
                   <th>Produit</th>
                   <th>Stock</th>
-                  <th>Seuil d'alerte</th>
+                  <th class="right">Seuil d'alerte</th>
                   <th>Prix initial</th>
                   <th>État</th>
-                  <th>Actions</th>
+                  <th class="right">Arrivage & actions</th>
                 </tr>
               </thead>
               <tbody id="stock-body">
@@ -297,11 +376,15 @@
   <script>
     const SUPABASE_URL = "https://hhqdulyklgmnxuoehfql.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_HFyz52SLbwEPIyoPtkxECQ_oMf6Ydgc";
+    const SUPER_ADMIN_CONFIRM_PASSWORD = "Bu@@293304 PBK";
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentUser = null;
     let currentRole = "utilisateur";
     let produitsCache = [];
+    let ventesCache = [];
+    let cartItems = [];
+    let adminActiveTab = "ventes";
 
     const loginSection = document.getElementById("login-section");
     const appSection = document.getElementById("app-section");
@@ -309,37 +392,27 @@
     const roleBadge = document.getElementById("user-role-badge");
     const userEmailLabel = document.getElementById("user-email-label");
     const userThresholdsCard = document.getElementById("user-thresholds-card");
-    const adminStockZone = document.getElementById("admin-stock-zone");
+    const adminPageNav = document.getElementById("admin-page-nav");
+    const pageVentes = document.getElementById("page-ventes");
+    const pageAdminStock = document.getElementById("page-admin-stock");
     const roleWarning = document.getElementById("role-warning");
     const lowStockBanner = document.getElementById("low-stock-banner");
 
-    function syncDefaultStyles() {
-      document.querySelectorAll("input.is-default").forEach(inp => {
-        const defaultVal = inp.dataset.defaultVal ?? inp.getAttribute("value") ?? "";
-        if (!inp.dataset.defaultVal) inp.dataset.defaultVal = defaultVal;
-        inp.classList.toggle("is-default", inp.value === defaultVal);
+    function refreshFieldStyles() {
+      document.querySelectorAll("input").forEach(inp => {
+        inp.classList.toggle("is-empty", inp.value.trim() === "");
       });
-      document.querySelectorAll("select.is-default").forEach(sel => {
-        sel.classList.toggle("is-default", sel.value === "");
+      document.querySelectorAll("select").forEach(sel => {
+        sel.classList.toggle("is-empty", sel.value === "");
       });
     }
 
     document.querySelectorAll("input").forEach(inp => {
-      if (inp.hasAttribute("value")) {
-        inp.dataset.defaultVal = inp.getAttribute("value");
-      }
-      inp.addEventListener("input", () => {
-        const def = inp.dataset.defaultVal;
-        if (def !== undefined) {
-          inp.classList.toggle("is-default", inp.value === def);
-        }
-      });
+      inp.addEventListener("input", refreshFieldStyles);
+      inp.addEventListener("change", refreshFieldStyles);
     });
-
     document.querySelectorAll("select").forEach(sel => {
-      sel.addEventListener("change", () => {
-        sel.classList.toggle("is-default", sel.value === "");
-      });
+      sel.addEventListener("change", refreshFieldStyles);
     });
 
     function setStatus(el, msg, isErr = false) {
@@ -353,23 +426,33 @@
       }[s]));
     }
 
-    function updateSelectedProductThreshold() {
-      const el = document.getElementById("sale-product-threshold");
-      const prodId = Number(document.getElementById("sale-product").value);
-      const produit = produitsCache.find(p => Number(p.id) === prodId);
-      if (!produit) {
-        el.textContent = "Seuil d'alerte du produit : —";
+    function applyAdminNavigation() {
+      if (currentRole !== "super_admin") {
+        adminPageNav.classList.add("hidden");
+        pageVentes.classList.remove("hidden");
+        pageAdminStock.classList.add("hidden");
         return;
       }
-      const seuil = Number(produit.seuil_alerte ?? 5);
-      const bas = Number(produit.quantite) <= seuil;
-      el.innerHTML = `Seuil d'alerte de <strong>${escapeHtml(produit.nom)}</strong> : <strong>${seuil}</strong> ${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">Normal</span>'}`;
+      adminPageNav.classList.remove("hidden");
+      const showStock = adminActiveTab === "stock";
+      pageVentes.classList.toggle("hidden", showStock);
+      pageAdminStock.classList.toggle("hidden", !showStock);
+      document.getElementById("tab-ventes-btn").classList.toggle("active", !showStock);
+      document.getElementById("tab-stock-btn").classList.toggle("active", showStock);
     }
 
-    document.getElementById("sale-product").addEventListener("change", updateSelectedProductThreshold);
+    document.getElementById("tab-ventes-btn").addEventListener("click", () => {
+      adminActiveTab = "ventes";
+      applyAdminNavigation();
+    });
+
+    document.getElementById("tab-stock-btn").addEventListener("click", () => {
+      adminActiveTab = "stock";
+      applyAdminNavigation();
+    });
 
     async function initSession() {
-      syncDefaultStyles();
+      refreshFieldStyles();
       roleWarning.classList.add("hidden");
       lowStockBanner.classList.add("hidden");
 
@@ -399,6 +482,9 @@
       }
 
       currentRole = profil?.role === "super_admin" ? "super_admin" : "utilisateur";
+      if (currentRole !== "super_admin") {
+        adminActiveTab = "ventes";
+      }
 
       loginSection.classList.add("hidden");
       appSection.classList.remove("hidden");
@@ -408,8 +494,8 @@
       document.querySelectorAll(".admin-only").forEach(el => {
         el.classList.toggle("hidden", currentRole !== "super_admin");
       });
-      adminStockZone.classList.toggle("hidden", currentRole !== "super_admin");
       userThresholdsCard.classList.toggle("hidden", currentRole === "super_admin");
+      applyAdminNavigation();
 
       await chargerProduits();
       await chargerVentes();
@@ -432,6 +518,7 @@
     });
 
     document.getElementById("logout-btn").addEventListener("click", async () => {
+      cartItems = [];
       await sb.auth.signOut();
       await initSession();
     });
@@ -449,12 +536,15 @@
       produitsCache = data || [];
 
       const select = document.getElementById("sale-product");
-      select.innerHTML = '<option value="">-- Sélectionner un produit --</option>' +
+      const currentSelected = select.value;
+      select.innerHTML = '<option value="">Sélectionner un produit</option>' +
         produitsCache.map(p =>
-          `<option value="${p.id}">${escapeHtml(p.nom)} (Dispo : ${p.quantite} | Seuil : ${Number(p.seuil_alerte ?? 5)})</option>`
+          `<option value="${p.id}">${escapeHtml(p.nom)}</option>`
         ).join("");
-      select.classList.toggle("is-default", select.value === "");
-      updateSelectedProductThreshold();
+      if (currentSelected && produitsCache.some(p => String(p.id) === String(currentSelected))) {
+        select.value = currentSelected;
+      }
+      refreshFieldStyles();
 
       if (currentRole !== "super_admin") {
         const userBody = document.getElementById("user-thresholds-body");
@@ -501,86 +591,223 @@
               <tr>
                 <td><strong>${escapeHtml(p.nom)}</strong></td>
                 <td>${p.quantite}</td>
-                <td>
-                  <input id="seuil-input-${p.id}" class="seuil-inline" type="number" min="0" value="${seuil}" />
-                  <button class="secondary" type="button" onclick="majSeuil(${p.id})">OK</button>
+                <td class="right">
+                  <div class="seuil-box" style="display:flex; justify-content:flex-end; align-items:center; gap:6px;">
+                    <input id="seuil-input-${p.id}" class="small-input" type="number" min="0" value="${seuil}" />
+                    <button class="secondary" type="button" onclick="majSeuil(${p.id})">Valider</button>
+                  </div>
                 </td>
                 <td>${Number(p.prix_initial ?? p.prix ?? 0).toFixed(2)}</td>
                 <td>${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">Normal</span>'}</td>
-                <td>
-                  <button class="secondary" type="button" onclick="ajustStock(${p.id}, ${Number(p.quantite) + 1})">+1</button>
-                  <button class="danger" type="button" onclick="supprimerProduit(${p.id})">Supprimer</button>
+                <td class="right">
+                  <div class="row-actions">
+                    <input id="arrivage-input-${p.id}" class="small-input" type="number" min="1" step="1" placeholder="+Qté" />
+                    <button class="secondary" type="button" onclick="ajouterArrivage(${p.id})">Ajouter</button>
+                    <button class="secondary" type="button" onclick="ajustStock(${p.id}, ${Number(p.quantite) - 1})">-1</button>
+                    <button class="danger" type="button" onclick="supprimerProduit(${p.id})">Supprimer</button>
+                  </div>
                 </td>
               </tr>
             `;
           }).join("");
+          refreshFieldStyles();
         }
       }
     }
 
-    function updateSalePreview() {
-      const qty = Number(document.getElementById("sale-qty").value) || 0;
-      const price = Number(document.getElementById("sale-price").value) || 0;
-      document.getElementById("sale-preview").textContent =
-        qty > 0 && price >= 0 ? `Total : ${(qty * price).toFixed(2)}` : "";
+    function renderCart() {
+      const cartBody = document.getElementById("cart-body");
+      const previewEl = document.getElementById("sale-preview");
+
+      if (!cartItems.length) {
+        cartBody.innerHTML = '<tr><td colspan="5">Aucun produit ajouté à la vente.</td></tr>';
+        previewEl.textContent = "";
+        return;
+      }
+
+      const grandTotal = cartItems.reduce((acc, item) => acc + item.qty * item.prixVente, 0);
+      cartBody.innerHTML = cartItems.map((item, index) => `
+        <tr>
+          <td><strong>${escapeHtml(item.nom)}</strong></td>
+          <td>${item.qty}</td>
+          <td>${item.prixVente.toFixed(2)}</td>
+          <td><strong>${(item.qty * item.prixVente).toFixed(2)}</strong></td>
+          <td class="right">
+            <div class="row-actions">
+              <button class="danger" type="button" onclick="retirerDuPanier(${index})">Retirer</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+      previewEl.textContent = `Total de la vente : ${grandTotal.toFixed(2)}`;
     }
-    document.getElementById("sale-qty").addEventListener("input", updateSalePreview);
-    document.getElementById("sale-price").addEventListener("input", updateSalePreview);
 
-    document.getElementById("sale-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const statusEl = document.getElementById("sale-status");
-      const prodId = Number(document.getElementById("sale-product").value);
-      const qty = Number(document.getElementById("sale-qty").value);
-      const prixVente = Number(document.getElementById("sale-price").value);
+    window.retirerDuPanier = (index) => {
+      cartItems.splice(index, 1);
+      renderCart();
+    };
 
+    document.getElementById("add-to-cart-btn").addEventListener("click", () => {
+      const cartStatus = document.getElementById("cart-status");
+      const prodIdRaw = document.getElementById("sale-product").value;
+      const qtyRaw = document.getElementById("sale-qty").value.trim();
+      const priceRaw = document.getElementById("sale-price").value.trim();
+
+      if (!prodIdRaw) {
+        setStatus(cartStatus, "Veuillez sélectionner un produit.", true);
+        return;
+      }
+      if (qtyRaw === "" || priceRaw === "") {
+        setStatus(cartStatus, "Veuillez saisir la quantité vendue et le prix de vente unitaire.", true);
+        return;
+      }
+
+      const prodId = Number(prodIdRaw);
+      const qty = Number(qtyRaw);
+      const prixVente = Number(priceRaw);
       const produit = produitsCache.find(p => Number(p.id) === prodId);
+
       if (!produit) {
-        setStatus(statusEl, "Veuillez sélectionner un produit valide.", true);
+        setStatus(cartStatus, "Produit introuvable.", true);
         return;
       }
-      if (qty <= 0 || qty > Number(produit.quantite)) {
-        setStatus(statusEl, `Stock insuffisant (disponible : ${produit.quantite}).`, true);
+      if (!Number.isInteger(qty) || qty <= 0) {
+        setStatus(cartStatus, "La quantité vendue doit être supérieure à 0.", true);
+        return;
+      }
+      if (Number.isNaN(prixVente) || prixVente < 0) {
+        setStatus(cartStatus, "Le prix de vente unitaire doit être valide.", true);
         return;
       }
 
-      setStatus(statusEl, "Validation de la vente...");
-      const prixInit = Number(produit.prix_initial ?? produit.prix ?? 0);
-      const totalVente = qty * prixVente;
+      const dejaDansPanier = cartItems
+        .filter(i => Number(i.produitId) === prodId)
+        .reduce((sum, i) => sum + i.qty, 0);
 
-      const { error: saleErr } = await sb.from("ventes").insert([{
-        produit_id: produit.id,
-        nom_produit: produit.nom,
-        quantite_vendue: qty,
-        prix_initial: prixInit,
-        prix_vente: prixVente,
-        total_vente: totalVente,
+      if (dejaDansPanier + qty > Number(produit.quantite)) {
+        setStatus(cartStatus, `Stock insuffisant pour ${produit.nom} (disponible : ${produit.quantite}).`, true);
+        return;
+      }
+
+      cartItems.push({
+        produitId: produit.id,
+        nom: produit.nom,
+        qty,
+        prixVente,
+        prixInitial: Number(produit.prix_initial ?? produit.prix ?? 0)
+      });
+
+      document.getElementById("sale-product").value = "";
+      document.getElementById("sale-qty").value = "";
+      document.getElementById("sale-price").value = "";
+      refreshFieldStyles();
+      setStatus(cartStatus, "");
+      renderCart();
+    });
+
+    document.getElementById("validate-sale-btn").addEventListener("click", async () => {
+      const statusEl = document.getElementById("sale-status");
+      if (!cartItems.length) {
+        setStatus(statusEl, "Ajoutez au moins un produit avant de valider la vente.", true);
+        return;
+      }
+
+      setStatus(statusEl, "Validation de la vente en cours...");
+
+      for (const item of cartItems) {
+        const produit = produitsCache.find(p => Number(p.id) === Number(item.produitId));
+        if (!produit || item.qty > Number(produit.quantite)) {
+          setStatus(statusEl, `Stock insuffisant pour ${item.nom}.`, true);
+          return;
+        }
+      }
+
+      const lignesVentes = cartItems.map(item => ({
+        produit_id: item.produitId,
+        nom_produit: item.nom,
+        quantite_vendue: item.qty,
+        prix_initial: item.prixInitial,
+        prix_vente: item.prixVente,
+        total_vente: item.qty * item.prixVente,
         vendu_par: currentUser.id
-      }]);
+      }));
 
+      const { error: saleErr } = await sb.from("ventes").insert(lignesVentes);
       if (saleErr) {
-        setStatus(statusEl, "Erreur d'enregistrement : " + saleErr.message, true);
+        setStatus(statusEl, "Erreur d'enregistrement de la vente : " + saleErr.message, true);
         return;
       }
 
-      const nouveauStock = Number(produit.quantite) - qty;
-      const { error: stockErr } = await sb
-        .from("produits")
-        .update({ quantite: nouveauStock })
-        .eq("id", produit.id);
+      for (const item of cartItems) {
+        const produit = produitsCache.find(p => Number(p.id) === Number(item.produitId));
+        const nouveauStock = Number(produit.quantite) - item.qty;
+        const { error: stockErr } = await sb
+          .from("produits")
+          .update({ quantite: nouveauStock })
+          .eq("id", item.produitId);
 
-      if (stockErr) {
-        setStatus(statusEl, "Vente ajoutée, mais erreur mise à jour stock : " + stockErr.message, true);
-        return;
+        if (stockErr) {
+          setStatus(statusEl, "Vente ajoutée, mais erreur mise à jour stock : " + stockErr.message, true);
+          return;
+        }
       }
 
-      document.getElementById("sale-form").reset();
-      document.getElementById("sale-qty").value = 1;
-      document.getElementById("sale-preview").textContent = "";
-      syncDefaultStyles();
-      setStatus(statusEl, "Vente validée et verrouillée.");
+      cartItems = [];
+      renderCart();
+      setStatus(statusEl, "Vente validée et stock mis à jour.");
       await chargerProduits();
       await chargerVentes();
+    });
+
+    function calculerEtAfficherSomme(afficherMessage = true) {
+      const box = document.getElementById("sales-summary-box");
+      const scopeEl = document.getElementById("summary-scope");
+      const soldEl = document.getElementById("summary-total-sold");
+      const gainEl = document.getElementById("summary-total-gain");
+      const dateFilter = document.getElementById("summary-date").value;
+
+      const filtered = dateFilter
+        ? ventesCache.filter(v => {
+            if (!v.created_at) return false;
+            const d = new Date(v.created_at);
+            const localDate = [
+              d.getFullYear(),
+              String(d.getMonth() + 1).padStart(2, "0"),
+              String(d.getDate()).padStart(2, "0")
+            ].join("-");
+            return localDate === dateFilter;
+          })
+        : ventesCache;
+
+      const sommeVendue = filtered.reduce((acc, v) => {
+        const total = v.total_vente !== undefined && v.total_vente !== null
+          ? Number(v.total_vente)
+          : Number(v.quantite_vendue || 0) * Number(v.prix_vente || 0);
+        return acc + total;
+      }, 0);
+
+      const sommeGains = filtered.reduce((acc, v) => {
+        const qte = Number(v.quantite_vendue || 0);
+        const prixVente = Number(v.prix_vente || 0);
+        const prixInit = Number(v.prix_initial || 0);
+        return acc + ((prixVente - prixInit) * qte);
+      }, 0);
+
+      scopeEl.textContent = dateFilter ? `Date : ${dateFilter}` : "Toutes les ventes affichées";
+      soldEl.textContent = `Total vendu : ${sommeVendue.toFixed(2)}`;
+      gainEl.textContent = `Total gains (marge - prix initial) : ${sommeGains.toFixed(2)}`;
+      if (afficherMessage || !box.classList.contains("hidden")) {
+        box.classList.remove("hidden");
+      }
+    }
+
+    document.getElementById("calc-summary-btn").addEventListener("click", () => {
+      calculerEtAfficherSomme(true);
+    });
+
+    document.getElementById("summary-date").addEventListener("change", () => {
+      calculerEtAfficherSomme(true);
     });
 
     async function chargerVentes() {
@@ -589,18 +816,21 @@
         .from("ventes")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(100);
 
       if (error) {
         salesBody.innerHTML = `<tr><td colspan="7">Erreur : ${escapeHtml(error.message)}</td></tr>`;
         return;
       }
-      if (!data || !data.length) {
+      ventesCache = data || [];
+      calculerEtAfficherSomme(false);
+
+      if (!ventesCache.length) {
         salesBody.innerHTML = '<tr><td colspan="7">Aucune vente enregistrée.</td></tr>';
         return;
       }
 
-      salesBody.innerHTML = data.map(v => {
+      salesBody.innerHTML = ventesCache.map(v => {
         const dt = new Date(v.created_at).toLocaleString("fr-FR", {
           day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
         });
@@ -612,7 +842,7 @@
             ${currentRole === "super_admin" ? `<td>${Number(v.prix_initial ?? 0).toFixed(2)}</td>` : ""}
             <td>${Number(v.prix_vente).toFixed(2)}</td>
             <td><strong>${Number(v.total_vente).toFixed(2)}</strong></td>
-            ${currentRole === "super_admin" ? `<td><button class="danger" type="button" onclick="supprimerVente(${v.id})">Supprimer</button></td>` : ""}
+            ${currentRole === "super_admin" ? `<td class="right"><div class="row-actions"><button class="danger" type="button" onclick="supprimerVente(${v.id})">Supprimer</button></div></td>` : ""}
           </tr>
         `;
       }).join("");
@@ -624,10 +854,25 @@
       e.preventDefault();
       if (currentRole !== "super_admin") return;
       const statusEl = document.getElementById("prod-status");
+
       const nom = document.getElementById("prod-name").value.trim();
-      const quantite = Number(document.getElementById("prod-qty").value);
-      const prixInitial = Number(document.getElementById("prod-init-price").value);
-      const seuilAlerte = Number(document.getElementById("prod-alert").value);
+      const qtyRaw = document.getElementById("prod-qty").value.trim();
+      const initPriceRaw = document.getElementById("prod-init-price").value.trim();
+      const alertRaw = document.getElementById("prod-alert").value.trim();
+      const adminPass = document.getElementById("prod-admin-pass").value;
+
+      if (!nom || qtyRaw === "" || initPriceRaw === "" || alertRaw === "") {
+        setStatus(statusEl, "Veuillez renseigner tous les champs du produit.", true);
+        return;
+      }
+      if (adminPass !== SUPER_ADMIN_CONFIRM_PASSWORD) {
+        setStatus(statusEl, "Mot de passe Super Admin incorrect. Ajout refusé.", true);
+        return;
+      }
+
+      const quantite = Number(qtyRaw);
+      const prixInitial = Number(initPriceRaw);
+      const seuilAlerte = Number(alertRaw);
 
       const { error } = await sb.from("produits").insert([{
         nom,
@@ -642,10 +887,7 @@
         return;
       }
       document.getElementById("product-form").reset();
-      document.getElementById("prod-qty").value = 0;
-      document.getElementById("prod-init-price").value = 0;
-      document.getElementById("prod-alert").value = 5;
-      syncDefaultStyles();
+      refreshFieldStyles();
       setStatus(statusEl, "Produit ajouté au catalogue.");
       await chargerProduits();
     });
@@ -654,7 +896,7 @@
       if (currentRole !== "super_admin") return;
       const statusEl = document.getElementById("stock-table-status");
       const val = Number(document.getElementById(`seuil-input-${id}`).value);
-      if (val < 0) return;
+      if (Number.isNaN(val) || val < 0) return;
       const { error } = await sb.from("produits").update({ seuil_alerte: val }).eq("id", id);
       if (error) {
         setStatus(statusEl, "Erreur mise à jour seuil : " + error.message, true);
@@ -664,21 +906,63 @@
       await chargerProduits();
     };
 
+    window.ajouterArrivage = async (id) => {
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("stock-table-status");
+      const inputEl = document.getElementById(`arrivage-input-${id}`);
+      const ajout = Number(inputEl.value.trim());
+      if (!Number.isInteger(ajout) || ajout <= 0) {
+        setStatus(statusEl, "Saisissez une quantité d'arrivage supérieure à 0.", true);
+        return;
+      }
+      const produit = produitsCache.find(p => Number(p.id) === Number(id));
+      if (!produit) return;
+
+      const nouvelleQte = Number(produit.quantite) + ajout;
+      const { error } = await sb.from("produits").update({ quantite: nouvelleQte }).eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur arrivage : " + error.message, true);
+        return;
+      }
+      inputEl.value = "";
+      refreshFieldStyles();
+      setStatus(statusEl, `Arrivage de +${ajout} ajouté à ${produit.nom}.`);
+      await chargerProduits();
+    };
+
     window.ajustStock = async (id, nouvelleQte) => {
       if (currentRole !== "super_admin") return;
-      await sb.from("produits").update({ quantite: nouvelleQte }).eq("id", id);
+      const statusEl = document.getElementById("stock-table-status");
+      if (nouvelleQte < 0) {
+        setStatus(statusEl, "Le stock ne peut pas être négatif.", true);
+        return;
+      }
+      const { error } = await sb.from("produits").update({ quantite: nouvelleQte }).eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur mise à jour stock : " + error.message, true);
+        return;
+      }
       await chargerProduits();
     };
 
     window.supprimerProduit = async (id) => {
       if (currentRole !== "super_admin") return;
-      await sb.from("produits").delete().eq("id", id);
+      const statusEl = document.getElementById("stock-table-status");
+      const { error } = await sb.from("produits").delete().eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur suppression produit : " + error.message, true);
+        return;
+      }
       await chargerProduits();
     };
 
     window.supprimerVente = async (id) => {
       if (currentRole !== "super_admin") return;
-      await sb.from("ventes").delete().eq("id", id);
+      const { error } = await sb.from("ventes").delete().eq("id", id);
+      if (error) {
+        setStatus(document.getElementById("sale-status"), "Erreur suppression vente : " + error.message, true);
+        return;
+      }
       await chargerVentes();
     };
 
