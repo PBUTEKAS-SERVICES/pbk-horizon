@@ -59,6 +59,13 @@
       font-weight: 600;
     }
     h2 { margin: 0 0 12px; font-size: 1.1rem; color: var(--primary); }
+    .sale-section-title {
+      margin: 0 0 16px;
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 0.2px;
+    }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -313,7 +320,7 @@
       <!-- PAGE 1 : VENTE -->
       <div id="page-vente-form" class="hidden">
         <section class="card">
-          <h2>🛍️</h2>
+          <h2 class="sale-section-title">Nouvelle vente</h2>
           <form id="cart-add-form">
             <div class="grid">
               <div>
@@ -331,9 +338,12 @@
                 <input id="sale-price" type="number" min="0" step="0.01" placeholder="Saisir le prix" />
               </div>
               <div>
-                <label for="sale-client-phone">Téléphone client fidèle (10 chiffres, facultatif)</label>
+                <label for="sale-client-phone">Téléphone</label>
                 <input id="sale-client-phone" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" placeholder="Ex: 0991234567" />
               </div>
+            </div>
+            <div class="action-row">
+              <button id="add-to-cart-btn" class="secondary" type="submit">Ajouter au panier</button>
             </div>
             <div id="cart-status" class="status"></div>
           </form>
@@ -376,9 +386,9 @@
       <div id="page-ventes-list" class="hidden">
         <section class="card">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <h2 style="margin:0;">Ventes enregistrées 💰💰</h2>
+            <h2 style="margin:0;">Ventes enregistrées</h2>
             <div class="row-actions">
-              <input id="search-phone-input" type="tel" inputmode="numeric" maxlength="10" placeholder="Rechercher par tél. (10 chiffres)" style="width:225px; padding:6px 10px; font-size:0.85rem;" />
+              <input id="search-phone-input" type="tel" inputmode="numeric" maxlength="10" placeholder="Rechercher par téléphone" style="width:210px; padding:6px 10px; font-size:0.85rem;" />
               <button id="clear-phone-search-btn" class="secondary" type="button">Effacer tél.</button>
               <button id="filter-today-btn" class="secondary" type="button">Aujourd'hui</button>
               <button id="filter-yesterday-btn" class="secondary" type="button">Hier</button>
@@ -394,7 +404,7 @@
               <thead>
                 <tr>
                   <th>Date & Heure / Reçu</th>
-                  <th>Client (Tél.)</th>
+                  <th>Téléphone</th>
                   <th>Produit</th>
                   <th>Qté</th>
                   <th class="admin-only hidden">Prix initial</th>
@@ -433,7 +443,7 @@
       <!-- PAGE 3 (UTILISATEUR) : SEUILS D'ALERTE -->
       <div id="page-user-thresholds" class="hidden">
         <section class="card">
-          <h2>⚠️🔥</h2>
+          <h2>Seuils d'alerte</h2>
           <div style="overflow-x:auto;">
             <table>
               <thead>
@@ -455,7 +465,7 @@
       <!-- PAGE 3 (SUPER ADMIN) : AJOUT PRODUIT -->
       <div id="page-admin-ajout" class="hidden">
         <section class="card">
-          <h2>🛍️</h2>
+          <h2>Ajout produit</h2>
           <form id="product-form">
             <div class="grid">
               <div>
@@ -493,7 +503,7 @@
       <!-- PAGE 4 (SUPER ADMIN) : CATALOGUE & STOCK -->
       <div id="page-admin-catalogue" class="hidden">
         <section class="card">
-          <h2>⚠️🔥</h2>
+          <h2>Catalogue & Stock</h2>
           <div style="overflow-x:auto;">
             <table>
               <thead>
@@ -561,7 +571,6 @@
 
     document.getElementById("summary-date").value = toLocalDateStr(new Date());
 
-    // Restreint la saisie des champs téléphone à 10 chiffres uniquement
     ["sale-client-phone", "search-phone-input"].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
@@ -574,7 +583,6 @@
       });
     });
 
-    // Boutons œil pour afficher / masquer les identifiants et mots de passe
     document.querySelectorAll(".eye-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         const targetId = btn.getAttribute("data-toggle-target");
@@ -633,7 +641,6 @@
 
     function formatWhatsAppNumber(tenDigits) {
       if (!tenDigits || tenDigits.length !== 10) return "";
-      // Format RDC (0991234567 -> 243991234567)
       if (tenDigits.startsWith("0")) {
         return "243" + tenDigits.slice(1);
       }
@@ -649,7 +656,7 @@
         "PBK Horizon",
         "------------------------",
         `Date : ${receipt.dateStr}`,
-        receipt.phone ? `Client : ${receipt.phone}` : null,
+        receipt.phone ? `Téléphone : ${receipt.phone}` : null,
         "Articles :",
         lignes,
         "------------------------",
@@ -748,11 +755,8 @@
         .eq("id", currentUser.id)
         .maybeSingle();
 
-      if (profilErr) {
-        roleWarning.textContent = "Attention : impossible de lire le rôle dans profils (" + profilErr.message + ").";
-        roleWarning.classList.remove("hidden");
-      } else if (!profil) {
-        roleWarning.textContent = "Attention : aucun profil trouvé pour cet UID (" + currentUser.id + "). Rôle 'utilisateur' appliqué par défaut.";
+      if (profilErr && currentRole === "super_admin") {
+        roleWarning.textContent = "Erreur lecture profils : " + profilErr.message;
         roleWarning.classList.remove("hidden");
       }
 
@@ -760,6 +764,8 @@
       if (currentRole !== "super_admin") {
         adminPagesUnlocked = false;
         adminActivePage = "vente";
+        roleWarning.classList.add("hidden");
+        lowStockBanner.classList.add("hidden");
       }
 
       loginSection.classList.add("hidden");
@@ -918,7 +924,7 @@
         </tr>
       `).join("");
 
-      previewEl.textContent = `Total de la vente : ${grandTotal.toFixed(2)}`;
+      previewEl.textContent = `Total de la vente (${cartItems.length} article${cartItems.length > 1 ? "s" : ""}) : ${grandTotal.toFixed(2)}`;
     }
 
     window.retirerDuPanier = (index) => {
@@ -926,7 +932,7 @@
       renderCart();
     };
 
-    function ajouterProduitLigneParEntree() {
+    function ajouterProduitLigne() {
       const cartStatus = document.getElementById("cart-status");
       const prodSelect = document.getElementById("sale-product");
       const qtyInput = document.getElementById("sale-qty");
@@ -938,11 +944,11 @@
 
       if (!prodIdRaw) {
         setStatus(cartStatus, "Veuillez sélectionner un produit.", true);
-        return;
+        return false;
       }
       if (qtyRaw === "" || priceRaw === "") {
-        setStatus(cartStatus, "Saisissez la quantité et le prix puis appuyez sur Entrée.", true);
-        return;
+        setStatus(cartStatus, "Saisissez la quantité et le prix.", true);
+        return false;
       }
 
       const prodId = Number(prodIdRaw);
@@ -952,15 +958,15 @@
 
       if (!produit) {
         setStatus(cartStatus, "Produit introuvable.", true);
-        return;
+        return false;
       }
       if (!Number.isInteger(qty) || qty <= 0) {
         setStatus(cartStatus, "La quantité vendue doit être supérieure à 0.", true);
-        return;
+        return false;
       }
       if (Number.isNaN(prixVente) || prixVente < 0) {
         setStatus(cartStatus, "Le prix de vente unitaire doit être valide.", true);
-        return;
+        return false;
       }
 
       const dejaDansPanier = cartItems
@@ -969,7 +975,7 @@
 
       if (dejaDansPanier + qty > Number(produit.quantite)) {
         setStatus(cartStatus, `Stock insuffisant pour ${produit.nom} (disponible : ${produit.quantite}).`, true);
-        return;
+        return false;
       }
 
       cartItems.push({
@@ -986,21 +992,22 @@
       delete qtyInput.dataset.clearedOnce;
       delete priceInput.dataset.clearedOnce;
       refreshFieldStyles();
-      setStatus(cartStatus, "Produit ajouté. Sélectionnez le produit suivant.");
+      setStatus(cartStatus, "Produit ajouté à la vente. Vous pouvez en ajouter un autre.");
       renderCart();
       prodSelect.focus();
+      return true;
     }
 
     document.getElementById("cart-add-form").addEventListener("submit", (e) => {
       e.preventDefault();
-      ajouterProduitLigneParEntree();
+      ajouterProduitLigne();
     });
 
     ["sale-product", "sale-qty", "sale-price"].forEach(id => {
       document.getElementById(id).addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          ajouterProduitLigneParEntree();
+          ajouterProduitLigne();
         }
       });
     });
@@ -1011,9 +1018,19 @@
       const phoneRaw = phoneInput.value.trim();
 
       if (phoneRaw !== "" && !/^\d{10}$/.test(phoneRaw)) {
-        setStatus(statusEl, "Le numéro de téléphone du client doit contenir exactement 10 chiffres (ou rester vide).", true);
+        setStatus(statusEl, "Le numéro de téléphone doit contenir 10 chiffres (ou rester vide).", true);
         phoneInput.focus();
         return;
+      }
+
+      const hasPendingDraft =
+        document.getElementById("sale-product").value !== "" ||
+        document.getElementById("sale-qty").value.trim() !== "" ||
+        document.getElementById("sale-price").value.trim() !== "";
+
+      if (hasPendingDraft) {
+        const added = ajouterProduitLigne();
+        if (!added) return;
       }
 
       if (!cartItems.length) {
@@ -1079,7 +1096,7 @@
 
       document.getElementById("last-receipt-text").textContent = [
         `Date : ${lastReceiptData.dateStr}`,
-        lastReceiptData.phone ? `Client : ${lastReceiptData.phone}` : null,
+        lastReceiptData.phone ? `Téléphone : ${lastReceiptData.phone}` : null,
         "Articles :",
         receiptBodyLines,
         "------------------------",
@@ -1092,6 +1109,7 @@
 
       cartItems = [];
       phoneInput.value = "";
+      document.getElementById("cart-status").textContent = "";
       refreshFieldStyles();
       renderCart();
       setStatus(statusEl, "Vente validée et stock mis à jour.");
@@ -1127,7 +1145,6 @@
     function getTableVentes() {
       const phoneQuery = document.getElementById("search-phone-input").value.trim();
 
-      // Si un numéro de téléphone est recherché, on cherche dans tout l'historique chargé
       if (phoneQuery !== "") {
         return ventesCache.filter(v =>
           String(v.telephone_client || "").includes(phoneQuery)
@@ -1262,7 +1279,7 @@
 
         for (const [minuteKey, items] of byReceiptTime.entries()) {
           receiptCounter += 1;
-          const clientPhone = items[0]?.telephone_client ? ` — Client : ${escapeHtml(items[0].telephone_client)}` : "";
+          const clientPhone = items[0]?.telephone_client ? ` — Tél : ${escapeHtml(items[0].telephone_client)}` : "";
           html += `<tr class="receipt-row"><td colspan="${colsCount}">Reçu #${receiptCounter} — ${escapeHtml(minuteKey)}${clientPhone}</td></tr>`;
 
           for (const v of items) {
