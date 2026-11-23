@@ -60,11 +60,10 @@
     }
     h2 { margin: 0 0 12px; font-size: 1.1rem; color: var(--primary); }
     .sale-section-title {
-      margin: 0 0 16px;
-      font-size: 1.55rem;
+      margin: 0 0 14px;
+      font-size: 1.35rem;
       font-weight: 800;
       color: var(--primary);
-      letter-spacing: 0.2px;
     }
     .grid {
       display: grid;
@@ -72,6 +71,14 @@
       gap: 12px;
     }
     label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
+    .sale-field-label {
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text);
+      line-height: 1.25;
+    }
     input, select {
       width: 100%;
       padding: 10px 12px;
@@ -320,25 +327,25 @@
       <!-- PAGE 1 : VENTE -->
       <div id="page-vente-form" class="hidden">
         <section class="card">
-          <h2 class="sale-section-title">Nouvelle vente</h2>
+          <h2 class="sale-section-title">🛍️</h2>
           <form id="cart-add-form">
             <div class="grid">
               <div>
-                <label for="sale-product">Produit</label>
+                <label class="sale-field-label" for="sale-product">Produit</label>
                 <select id="sale-product" class="is-empty">
                   <option value="">Sélectionner un produit</option>
                 </select>
               </div>
               <div>
-                <label for="sale-qty">Quantité vendue</label>
+                <label class="sale-field-label" for="sale-qty">Quantité vendue</label>
                 <input id="sale-qty" type="number" min="1" step="1" placeholder="Saisir la quantité" />
               </div>
               <div>
-                <label for="sale-price">Prix de vente unitaire</label>
+                <label class="sale-field-label" for="sale-price">Prix de vente unitaire</label>
                 <input id="sale-price" type="number" min="0" step="0.01" placeholder="Saisir le prix" />
               </div>
               <div>
-                <label for="sale-client-phone">Téléphone</label>
+                <label class="sale-field-label" for="sale-client-phone">Téléphone</label>
                 <input id="sale-client-phone" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" placeholder="Ex: 0991234567" />
               </div>
             </div>
@@ -386,7 +393,7 @@
       <div id="page-ventes-list" class="hidden">
         <section class="card">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <h2 style="margin:0;">Ventes enregistrées</h2>
+            <h2 style="margin:0;">Ventes enregistrées 💰💰</h2>
             <div class="row-actions">
               <input id="search-phone-input" type="tel" inputmode="numeric" maxlength="10" placeholder="Rechercher par téléphone" style="width:210px; padding:6px 10px; font-size:0.85rem;" />
               <button id="clear-phone-search-btn" class="secondary" type="button">Effacer tél.</button>
@@ -443,7 +450,7 @@
       <!-- PAGE 3 (UTILISATEUR) : SEUILS D'ALERTE -->
       <div id="page-user-thresholds" class="hidden">
         <section class="card">
-          <h2>Seuils d'alerte</h2>
+          <h2>⚠️🔥</h2>
           <div style="overflow-x:auto;">
             <table>
               <thead>
@@ -465,7 +472,7 @@
       <!-- PAGE 3 (SUPER ADMIN) : AJOUT PRODUIT -->
       <div id="page-admin-ajout" class="hidden">
         <section class="card">
-          <h2>Ajout produit</h2>
+          <h2>🛍️</h2>
           <form id="product-form">
             <div class="grid">
               <div>
@@ -503,7 +510,7 @@
       <!-- PAGE 4 (SUPER ADMIN) : CATALOGUE & STOCK -->
       <div id="page-admin-catalogue" class="hidden">
         <section class="card">
-          <h2>Catalogue & Stock</h2>
+          <h2>⚠️🔥</h2>
           <div style="overflow-x:auto;">
             <table>
               <thead>
@@ -755,17 +762,15 @@
         .eq("id", currentUser.id)
         .maybeSingle();
 
-      if (profilErr && currentRole === "super_admin") {
-        roleWarning.textContent = "Erreur lecture profils : " + profilErr.message;
-        roleWarning.classList.remove("hidden");
-      }
-
       currentRole = profil?.role === "super_admin" ? "super_admin" : "utilisateur";
       if (currentRole !== "super_admin") {
         adminPagesUnlocked = false;
         adminActivePage = "vente";
         roleWarning.classList.add("hidden");
         lowStockBanner.classList.add("hidden");
+      } else if (profilErr) {
+        roleWarning.textContent = "Erreur lecture profils : " + profilErr.message;
+        roleWarning.classList.remove("hidden");
       }
 
       loginSection.classList.add("hidden");
