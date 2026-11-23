@@ -18,6 +18,8 @@
       --danger-bg: #fdecea;
       --ok: #1e7e34;
       --ok-bg: #eaf6ed;
+      --whatsapp: #128c7e;
+      --whatsapp-hover: #075e54;
       --border: #dfe4ec;
     }
     * { box-sizing: border-box; }
@@ -66,12 +68,18 @@
     input, select {
       width: 100%;
       padding: 10px 12px;
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--primary);
       border-radius: 8px;
       font-size: 0.95rem;
       background: #fff;
       color: var(--text);
       font-style: normal;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    input:focus, select:focus {
+      border-color: var(--primary-hover);
+      box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.16);
     }
     input::placeholder {
       color: var(--default-hint);
@@ -81,6 +89,29 @@
     select.is-empty {
       color: var(--default-hint);
       font-style: italic;
+    }
+    .secret-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .secret-wrap input {
+      padding-right: 42px;
+    }
+    .eye-btn {
+      position: absolute;
+      right: 6px;
+      background: transparent;
+      color: var(--primary);
+      border: none;
+      padding: 4px 6px;
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .eye-btn:hover {
+      background: #eef2f7;
     }
     .small-input {
       width: 78px;
@@ -127,6 +158,8 @@
     button:hover { background: var(--primary-hover); }
     button.secondary { background: #eef2f7; color: var(--text); padding: 6px 10px; font-size: 0.85rem; }
     button.danger { background: var(--danger-bg); color: var(--danger); padding: 6px 10px; font-size: 0.85rem; }
+    button.whatsapp { background: var(--whatsapp); color: #fff; }
+    button.whatsapp:hover { background: var(--whatsapp-hover); }
     .badge {
       display: inline-block;
       padding: 4px 10px;
@@ -147,6 +180,59 @@
       background: #f4f6f9;
       font-weight: 700;
       border-top: 2px solid var(--border);
+    }
+    .day-totals-split {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      width: 100%;
+    }
+    .day-metric-box {
+      background: #ffffff;
+      border: 1.5px solid var(--primary);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .day-metric-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .day-metric-value {
+      font-size: 1rem;
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .day-metric-value.gain {
+      color: var(--ok);
+    }
+    .receipt-preview-box {
+      margin-top: 14px;
+      border: 1.5px solid var(--primary);
+      border-radius: 10px;
+      padding: 14px;
+      background: #f9fbfd;
+    }
+    .receipt-logo-header {
+      text-align: left;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--primary);
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 6px;
+    }
+    .receipt-body-text {
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.86rem;
+      color: var(--text);
+      margin: 0;
     }
     .hidden { display: none !important; }
     .pill-low { background: var(--danger-bg); color: var(--danger); padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
@@ -186,12 +272,18 @@
       <h2>Connexion</h2>
       <form id="login-form">
         <div style="margin-bottom: 12px;">
-          <label for="login-email">Adresse e-mail</label>
-          <input id="login-email" type="email" required placeholder="Saisir l'adresse e-mail" />
+          <label for="login-email">Identifiant (adresse e-mail)</label>
+          <div class="secret-wrap">
+            <input id="login-email" type="password" required autocomplete="username" placeholder="Saisir l'identifiant" />
+            <button type="button" class="eye-btn" data-toggle-target="login-email" aria-label="Afficher ou masquer l'identifiant">👁️</button>
+          </div>
         </div>
         <div style="margin-bottom: 14px;">
           <label for="login-password">Mot de passe</label>
-          <input id="login-password" type="password" required placeholder="Saisir le mot de passe" />
+          <div class="secret-wrap">
+            <input id="login-password" type="password" required autocomplete="current-password" placeholder="Saisir le mot de passe" />
+            <button type="button" class="eye-btn" data-toggle-target="login-password" aria-label="Afficher ou masquer le mot de passe">👁️</button>
+          </div>
         </div>
         <div class="action-row">
           <button type="submit" style="width: 100%;">Se connecter</button>
@@ -210,14 +302,16 @@
         <button id="user-tab-seuils-btn" class="secondary tab-btn" type="button">Seuils d'alerte</button>
       </nav>
 
-      <!-- NAVIGATION SUPER ADMIN -->
+      <!-- NAVIGATION PAR PAGE POUR LE SUPER ADMIN (CHAQUE PAGE STRICTEMENT SÉPARÉE) -->
       <nav id="admin-page-nav" class="tabs hidden">
-        <button id="tab-ventes-btn" class="secondary tab-btn active" type="button">Page Ventes</button>
-        <button id="tab-stock-btn" class="secondary tab-btn" type="button">Page Ajout & Catalogue</button>
+        <button id="admin-tab-vente-btn" class="secondary tab-btn active" type="button">Page Vente</button>
+        <button id="admin-tab-ventes-btn" class="secondary tab-btn" type="button">Ventes enregistrées</button>
+        <button id="admin-tab-ajout-btn" class="secondary tab-btn" type="button">Ajout produit</button>
+        <button id="admin-tab-catalogue-btn" class="secondary tab-btn" type="button">Catalogue & Stock</button>
       </nav>
 
-      <!-- PAGE VENTE (FORMULAIRE + PANIER) -->
-      <div id="page-vente-form">
+      <!-- PAGE 1 : VENTE -->
+      <div id="page-vente-form" class="hidden">
         <section class="card">
           <h2>🛍️</h2>
           <form id="cart-add-form">
@@ -235,6 +329,10 @@
               <div>
                 <label for="sale-price">Prix de vente unitaire</label>
                 <input id="sale-price" type="number" min="0" step="0.01" placeholder="Saisir le prix" />
+              </div>
+              <div>
+                <label for="sale-client-phone">Téléphone client fidèle (10 chiffres, facultatif)</label>
+                <input id="sale-client-phone" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" placeholder="Ex: 0991234567" />
               </div>
             </div>
             <div id="cart-status" class="status"></div>
@@ -261,15 +359,27 @@
             <button id="validate-sale-btn" type="button">Valider la vente</button>
           </div>
           <div id="sale-status" class="status"></div>
+
+          <!-- APERÇU DU REÇU & ENVOI WHATSAPP APRÈS VALIDATION -->
+          <div id="last-receipt-box" class="receipt-preview-box hidden">
+            <div class="receipt-logo-header">PBK Horizon</div>
+            <pre id="last-receipt-text" class="receipt-body-text"></pre>
+            <div class="action-row">
+              <button id="send-whatsapp-btn" class="whatsapp" type="button">Envoyer le reçu par WhatsApp</button>
+              <button id="copy-receipt-btn" class="secondary" type="button">Copier le reçu</button>
+            </div>
+          </div>
         </section>
       </div>
 
-      <!-- PAGE VENTES ENREGISTRÉES (JOURS, REÇUS & SOMMES) -->
-      <div id="page-ventes-list">
+      <!-- PAGE 2 : VENTES ENREGISTRÉES -->
+      <div id="page-ventes-list" class="hidden">
         <section class="card">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <h2 style="margin:0;">Ventes enregistrées 💰💰</h2>
             <div class="row-actions">
+              <input id="search-phone-input" type="tel" inputmode="numeric" maxlength="10" placeholder="Rechercher par tél. (10 chiffres)" style="width:225px; padding:6px 10px; font-size:0.85rem;" />
+              <button id="clear-phone-search-btn" class="secondary" type="button">Effacer tél.</button>
               <button id="filter-today-btn" class="secondary" type="button">Aujourd'hui</button>
               <button id="filter-yesterday-btn" class="secondary" type="button">Hier</button>
               <button id="filter-all-btn" class="secondary" type="button">Tous les jours</button>
@@ -284,6 +394,7 @@
               <thead>
                 <tr>
                   <th>Date & Heure / Reçu</th>
+                  <th>Client (Tél.)</th>
                   <th>Produit</th>
                   <th>Qté</th>
                   <th class="admin-only hidden">Prix initial</th>
@@ -292,15 +403,24 @@
                 </tr>
               </thead>
               <tbody id="sales-body">
-                <tr><td colspan="6">Chargement...</td></tr>
+                <tr><td colspan="7">Chargement...</td></tr>
               </tbody>
               <tfoot>
                 <tr>
-                  <td colspan="6">
-                    <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-                      <span id="footer-date">Date : 2026-11-20</span>
-                      <span id="footer-total-sold">Total vendu : 0.00</span>
-                      <span id="footer-total-gain">Total gains (marge - prix initial) : 0.00</span>
+                  <td colspan="7">
+                    <div class="day-totals-split">
+                      <div class="day-metric-box">
+                        <span class="day-metric-label">Date pointée</span>
+                        <span id="footer-date" class="day-metric-value">Date : -</span>
+                      </div>
+                      <div class="day-metric-box">
+                        <span class="day-metric-label">Somme totale de la journée</span>
+                        <span id="footer-total-sold" class="day-metric-value">Total vendu de la journée : 0.00</span>
+                      </div>
+                      <div class="day-metric-box">
+                        <span class="day-metric-label">Somme totale des gains de la journée</span>
+                        <span id="footer-total-gain" class="day-metric-value gain">Total gains de la journée : 0.00</span>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -310,7 +430,7 @@
         </section>
       </div>
 
-      <!-- SEUILS D'ALERTE POUR L'UTILISATEUR CLASSIQUE -->
+      <!-- PAGE 3 (UTILISATEUR) : SEUILS D'ALERTE -->
       <div id="page-user-thresholds" class="hidden">
         <section class="card">
           <h2>⚠️🔥</h2>
@@ -332,8 +452,8 @@
         </section>
       </div>
 
-      <!-- PAGE AJOUT & CATALOGUE (SUPER ADMIN UNIQUEMENT) -->
-      <div id="page-admin-stock" class="hidden">
+      <!-- PAGE 3 (SUPER ADMIN) : AJOUT PRODUIT -->
+      <div id="page-admin-ajout" class="hidden">
         <section class="card">
           <h2>🛍️</h2>
           <form id="product-form">
@@ -356,7 +476,10 @@
               </div>
               <div>
                 <label for="prod-admin-pass">Mot de passe Super Admin</label>
-                <input id="prod-admin-pass" type="password" required placeholder="Saisir le mot de passe" />
+                <div class="secret-wrap">
+                  <input id="prod-admin-pass" type="password" required placeholder="Saisir le mot de passe" />
+                  <button type="button" class="eye-btn" data-toggle-target="prod-admin-pass" aria-label="Afficher ou masquer le mot de passe Super Admin">👁️</button>
+                </div>
               </div>
             </div>
             <div class="action-row">
@@ -365,7 +488,10 @@
             <div id="prod-status" class="status"></div>
           </form>
         </section>
+      </div>
 
+      <!-- PAGE 4 (SUPER ADMIN) : CATALOGUE & STOCK -->
+      <div id="page-admin-catalogue" class="hidden">
         <section class="card">
           <h2>⚠️🔥</h2>
           <div style="overflow-x:auto;">
@@ -403,10 +529,12 @@
     let produitsCache = [];
     let ventesCache = [];
     let cartItems = [];
-    let adminActiveTab = "ventes";
-    let adminStockUnlocked = false;
+    let lastReceiptData = null;
+    let adminActivePage = "vente";
+    let adminPagesUnlocked = false;
     let userActiveTab = "vente";
-    let showTotalsInFooter = false;
+    let showTotalsInFooter = true;
+    let viewAllDays = false;
 
     const loginSection = document.getElementById("login-section");
     const appSection = document.getElementById("app-section");
@@ -418,9 +546,45 @@
     const pageVenteForm = document.getElementById("page-vente-form");
     const pageVentesList = document.getElementById("page-ventes-list");
     const pageUserThresholds = document.getElementById("page-user-thresholds");
-    const pageAdminStock = document.getElementById("page-admin-stock");
+    const pageAdminAjout = document.getElementById("page-admin-ajout");
+    const pageAdminCatalogue = document.getElementById("page-admin-catalogue");
     const roleWarning = document.getElementById("role-warning");
     const lowStockBanner = document.getElementById("low-stock-banner");
+
+    function toLocalDateStr(dateObj) {
+      return [
+        dateObj.getFullYear(),
+        String(dateObj.getMonth() + 1).padStart(2, "0"),
+        String(dateObj.getDate()).padStart(2, "0")
+      ].join("-");
+    }
+
+    document.getElementById("summary-date").value = toLocalDateStr(new Date());
+
+    // Restreint la saisie des champs téléphone à 10 chiffres uniquement
+    ["sale-client-phone", "search-phone-input"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", () => {
+        el.value = el.value.replace(/\D/g, "").slice(0, 10);
+        refreshFieldStyles();
+        if (id === "search-phone-input") {
+          renderVentesTable();
+        }
+      });
+    });
+
+    // Boutons œil pour afficher / masquer les identifiants et mots de passe
+    document.querySelectorAll(".eye-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.getAttribute("data-toggle-target");
+        const inputEl = document.getElementById(targetId);
+        if (!inputEl) return;
+        const isHidden = inputEl.type === "password";
+        inputEl.type = isHidden ? "text" : "password";
+        btn.textContent = isHidden ? "🙈" : "👁️";
+      });
+    });
 
     function refreshFieldStyles() {
       document.querySelectorAll("input").forEach(inp => {
@@ -467,32 +631,62 @@
       }[s]));
     }
 
-    function toLocalDateStr(dateObj) {
+    function formatWhatsAppNumber(tenDigits) {
+      if (!tenDigits || tenDigits.length !== 10) return "";
+      // Format RDC (0991234567 -> 243991234567)
+      if (tenDigits.startsWith("0")) {
+        return "243" + tenDigits.slice(1);
+      }
+      return tenDigits;
+    }
+
+    function buildWhatsAppReceiptText(receipt) {
+      const lignes = receipt.items.map(item =>
+        `• ${item.nom} : ${item.qty} x ${item.prixVente.toFixed(2)} = ${(item.qty * item.prixVente).toFixed(2)}`
+      ).join("\n");
+
       return [
-        dateObj.getFullYear(),
-        String(dateObj.getMonth() + 1).padStart(2, "0"),
-        String(dateObj.getDate()).padStart(2, "0")
-      ].join("-");
+        "PBK Horizon",
+        "------------------------",
+        `Date : ${receipt.dateStr}`,
+        receipt.phone ? `Client : ${receipt.phone}` : null,
+        "Articles :",
+        lignes,
+        "------------------------",
+        `TOTAL PAYÉ : ${receipt.total.toFixed(2)}`,
+        "",
+        "Merci d'être passé chez PBK Horizon!"
+      ].filter(Boolean).join("\n");
     }
 
     function applyNavigation() {
       if (currentRole === "super_admin") {
         userPageNav.classList.add("hidden");
         adminPageNav.classList.remove("hidden");
-        const showStock = adminActiveTab === "stock" && adminStockUnlocked;
-        pageVenteForm.classList.toggle("hidden", showStock);
-        pageVentesList.classList.toggle("hidden", showStock);
+
+        const isProtected = adminActivePage === "ajout" || adminActivePage === "catalogue";
+        const activePage = isProtected && !adminPagesUnlocked ? "vente" : adminActivePage;
+
+        pageVenteForm.classList.toggle("hidden", activePage !== "vente");
+        pageVentesList.classList.toggle("hidden", activePage !== "ventes");
+        pageAdminAjout.classList.toggle("hidden", activePage !== "ajout");
+        pageAdminCatalogue.classList.toggle("hidden", activePage !== "catalogue");
         pageUserThresholds.classList.add("hidden");
-        pageAdminStock.classList.toggle("hidden", !showStock);
-        document.getElementById("tab-ventes-btn").classList.toggle("active", !showStock);
-        document.getElementById("tab-stock-btn").classList.toggle("active", showStock);
+
+        document.getElementById("admin-tab-vente-btn").classList.toggle("active", activePage === "vente");
+        document.getElementById("admin-tab-ventes-btn").classList.toggle("active", activePage === "ventes");
+        document.getElementById("admin-tab-ajout-btn").classList.toggle("active", activePage === "ajout");
+        document.getElementById("admin-tab-catalogue-btn").classList.toggle("active", activePage === "catalogue");
       } else {
         adminPageNav.classList.add("hidden");
         userPageNav.classList.remove("hidden");
-        pageAdminStock.classList.add("hidden");
+        pageAdminAjout.classList.add("hidden");
+        pageAdminCatalogue.classList.add("hidden");
+
         pageVenteForm.classList.toggle("hidden", userActiveTab !== "vente");
         pageVentesList.classList.toggle("hidden", userActiveTab !== "ventes");
         pageUserThresholds.classList.toggle("hidden", userActiveTab !== "seuils");
+
         document.getElementById("user-tab-vente-btn").classList.toggle("active", userActiveTab === "vente");
         document.getElementById("user-tab-ventes-btn").classList.toggle("active", userActiveTab === "ventes");
         document.getElementById("user-tab-seuils-btn").classList.toggle("active", userActiveTab === "seuils");
@@ -512,21 +706,25 @@
       applyNavigation();
     });
 
-    document.getElementById("tab-ventes-btn").addEventListener("click", () => {
-      adminActiveTab = "ventes";
-      applyNavigation();
-    });
-
-    document.getElementById("tab-stock-btn").addEventListener("click", () => {
-      const saisie = prompt("Entrez le mot de passe Super Admin pour accéder à Page Ajout & Catalogue :");
-      if (saisie === SUPER_ADMIN_CONFIRM_PASSWORD) {
-        adminStockUnlocked = true;
-        adminActiveTab = "stock";
-        applyNavigation();
-      } else if (saisie !== null) {
-        alert("Mot de passe incorrect.");
+    function switchAdminPage(targetPage) {
+      const needsPassword = targetPage === "ajout" || targetPage === "catalogue";
+      if (needsPassword && !adminPagesUnlocked) {
+        const saisie = prompt("Entrez le mot de passe Super Admin pour accéder à cette page :");
+        if (saisie === SUPER_ADMIN_CONFIRM_PASSWORD) {
+          adminPagesUnlocked = true;
+        } else {
+          if (saisie !== null) alert("Mot de passe incorrect.");
+          return;
+        }
       }
-    });
+      adminActivePage = targetPage;
+      applyNavigation();
+    }
+
+    document.getElementById("admin-tab-vente-btn").addEventListener("click", () => switchAdminPage("vente"));
+    document.getElementById("admin-tab-ventes-btn").addEventListener("click", () => switchAdminPage("ventes"));
+    document.getElementById("admin-tab-ajout-btn").addEventListener("click", () => switchAdminPage("ajout"));
+    document.getElementById("admin-tab-catalogue-btn").addEventListener("click", () => switchAdminPage("catalogue"));
 
     async function initSession() {
       refreshFieldStyles();
@@ -560,8 +758,8 @@
 
       currentRole = profil?.role === "super_admin" ? "super_admin" : "utilisateur";
       if (currentRole !== "super_admin") {
-        adminStockUnlocked = false;
-        adminActiveTab = "ventes";
+        adminPagesUnlocked = false;
+        adminActivePage = "vente";
       }
 
       loginSection.classList.add("hidden");
@@ -596,7 +794,10 @@
 
     document.getElementById("logout-btn").addEventListener("click", async () => {
       cartItems = [];
-      adminStockUnlocked = false;
+      lastReceiptData = null;
+      document.getElementById("last-receipt-box").classList.add("hidden");
+      adminPagesUnlocked = false;
+      adminActivePage = "vente";
       await sb.auth.signOut();
       await initSession();
     });
@@ -806,6 +1007,15 @@
 
     document.getElementById("validate-sale-btn").addEventListener("click", async () => {
       const statusEl = document.getElementById("sale-status");
+      const phoneInput = document.getElementById("sale-client-phone");
+      const phoneRaw = phoneInput.value.trim();
+
+      if (phoneRaw !== "" && !/^\d{10}$/.test(phoneRaw)) {
+        setStatus(statusEl, "Le numéro de téléphone du client doit contenir exactement 10 chiffres (ou rester vide).", true);
+        phoneInput.focus();
+        return;
+      }
+
       if (!cartItems.length) {
         setStatus(statusEl, "Ajoutez au moins un produit avant de valider la vente.", true);
         return;
@@ -828,6 +1038,7 @@
         prix_initial: item.prixInitial,
         prix_vente: item.prixVente,
         total_vente: item.qty * item.prixVente,
+        telephone_client: phoneRaw || null,
         vendu_par: currentUser.id
       }));
 
@@ -851,63 +1062,146 @@
         }
       }
 
+      const totalCommande = cartItems.reduce((acc, item) => acc + item.qty * item.prixVente, 0);
+      lastReceiptData = {
+        dateStr: new Date().toLocaleString("fr-FR", {
+          day: "2-digit", month: "2-digit", year: "numeric",
+          hour: "2-digit", minute: "2-digit"
+        }),
+        phone: phoneRaw,
+        items: [...cartItems],
+        total: totalCommande
+      };
+
+      const receiptBodyLines = lastReceiptData.items.map(item =>
+        `• ${item.nom} : ${item.qty} x ${item.prixVente.toFixed(2)} = ${(item.qty * item.prixVente).toFixed(2)}`
+      ).join("\n");
+
+      document.getElementById("last-receipt-text").textContent = [
+        `Date : ${lastReceiptData.dateStr}`,
+        lastReceiptData.phone ? `Client : ${lastReceiptData.phone}` : null,
+        "Articles :",
+        receiptBodyLines,
+        "------------------------",
+        `TOTAL PAYÉ : ${lastReceiptData.total.toFixed(2)}`,
+        "",
+        "Merci d'être passé chez PBK Horizon!"
+      ].filter(Boolean).join("\n");
+
+      document.getElementById("last-receipt-box").classList.remove("hidden");
+
       cartItems = [];
+      phoneInput.value = "";
+      refreshFieldStyles();
       renderCart();
       setStatus(statusEl, "Vente validée et stock mis à jour.");
       await chargerProduits();
       await chargerVentes();
     });
 
-    function getFilteredVentes() {
-      const dateFilter = document.getElementById("summary-date").value;
-      if (!dateFilter) return ventesCache;
+    document.getElementById("send-whatsapp-btn").addEventListener("click", () => {
+      if (!lastReceiptData) return;
+      const text = encodeURIComponent(buildWhatsAppReceiptText(lastReceiptData));
+      const waNumber = formatWhatsAppNumber(lastReceiptData.phone);
+      const url = waNumber
+        ? `https://wa.me/${waNumber}?text=${text}`
+        : `https://wa.me/?text=${text}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    });
+
+    document.getElementById("copy-receipt-btn").addEventListener("click", async () => {
+      if (!lastReceiptData) return;
+      try {
+        await navigator.clipboard.writeText(buildWhatsAppReceiptText(lastReceiptData));
+        setStatus(document.getElementById("sale-status"), "Reçu copié dans le presse-papiers.");
+      } catch {
+        setStatus(document.getElementById("sale-status"), "Impossible de copier automatiquement.", true);
+      }
+    });
+
+    function getTargetDayStr() {
+      const dateInput = document.getElementById("summary-date").value;
+      return dateInput || toLocalDateStr(new Date());
+    }
+
+    function getTableVentes() {
+      const phoneQuery = document.getElementById("search-phone-input").value.trim();
+
+      // Si un numéro de téléphone est recherché, on cherche dans tout l'historique chargé
+      if (phoneQuery !== "") {
+        return ventesCache.filter(v =>
+          String(v.telephone_client || "").includes(phoneQuery)
+        );
+      }
+
+      if (viewAllDays) return ventesCache;
+      const targetDay = getTargetDayStr();
       return ventesCache.filter(v => {
         if (!v.created_at) return false;
-        return toLocalDateStr(new Date(v.created_at)) === dateFilter;
+        return toLocalDateStr(new Date(v.created_at)) === targetDay;
       });
     }
 
     function updateFooterSummary() {
-      const dateFilter = document.getElementById("summary-date").value;
-      const dateLabel = dateFilter || "2026-11-20";
-      document.getElementById("footer-date").textContent = `Date : ${dateLabel}`;
+      const targetDay = getTargetDayStr();
+      document.getElementById("footer-date").textContent = `Date : ${targetDay}`;
 
       if (!showTotalsInFooter) {
-        document.getElementById("footer-total-sold").textContent = "Total vendu : 0.00";
-        document.getElementById("footer-total-gain").textContent = "Total gains (marge - prix initial) : 0.00";
+        document.getElementById("footer-total-sold").textContent = "Total vendu de la journée : 0.00";
+        document.getElementById("footer-total-gain").textContent = "Total gains de la journée : 0.00";
         return;
       }
 
-      const list = getFilteredVentes();
-      const totalVendu = list.reduce((acc, v) => {
-        const t = v.total_vente !== undefined && v.total_vente !== null
-          ? Number(v.total_vente)
-          : Number(v.quantite_vendue || 0) * Number(v.prix_vente || 0);
-        return acc + t;
+      const daySales = ventesCache.filter(v => {
+        if (!v.created_at) return false;
+        return toLocalDateStr(new Date(v.created_at)) === targetDay;
+      });
+
+      const totalVenduJournee = daySales.reduce((acc, v) => {
+        const qte = Number(v.quantite_vendue) || 0;
+        const pv = Number(v.prix_vente) || 0;
+        return acc + (qte * pv);
       }, 0);
-      const totalGains = list.reduce((acc, v) => {
-        const qte = Number(v.quantite_vendue || 0);
-        const pv = Number(v.prix_vente || 0);
-        const pi = Number(v.prix_initial || 0);
+
+      const totalGainsJournee = daySales.reduce((acc, v) => {
+        const qte = Number(v.quantite_vendue) || 0;
+        const pv = Number(v.prix_vente) || 0;
+        const pi = Number(v.prix_initial) || 0;
         return acc + ((pv - pi) * qte);
       }, 0);
 
-      document.getElementById("footer-total-sold").textContent = `Total vendu : ${totalVendu.toFixed(2)}`;
-      document.getElementById("footer-total-gain").textContent = `Total gains (marge - prix initial) : ${totalGains.toFixed(2)}`;
+      document.getElementById("footer-total-sold").textContent = `Total vendu de la journée : ${totalVenduJournee.toFixed(2)}`;
+      document.getElementById("footer-total-gain").textContent = `Total gains de la journée : ${totalGainsJournee.toFixed(2)}`;
     }
 
+    document.getElementById("clear-phone-search-btn").addEventListener("click", () => {
+      document.getElementById("search-phone-input").value = "";
+      refreshFieldStyles();
+      renderVentesTable();
+    });
+
     document.getElementById("calc-summary-btn").addEventListener("click", () => {
+      if (!document.getElementById("summary-date").value) {
+        document.getElementById("summary-date").value = toLocalDateStr(new Date());
+      }
+      viewAllDays = false;
       showTotalsInFooter = true;
+      refreshFieldStyles();
+      renderVentesTable();
       updateFooterSummary();
     });
 
     document.getElementById("summary-date").addEventListener("change", () => {
+      viewAllDays = false;
+      showTotalsInFooter = true;
       renderVentesTable();
       updateFooterSummary();
     });
 
     document.getElementById("filter-today-btn").addEventListener("click", () => {
       document.getElementById("summary-date").value = toLocalDateStr(new Date());
+      viewAllDays = false;
+      showTotalsInFooter = true;
       refreshFieldStyles();
       renderVentesTable();
       updateFooterSummary();
@@ -917,13 +1211,15 @@
       const d = new Date();
       d.setDate(d.getDate() - 1);
       document.getElementById("summary-date").value = toLocalDateStr(d);
+      viewAllDays = false;
+      showTotalsInFooter = true;
       refreshFieldStyles();
       renderVentesTable();
       updateFooterSummary();
     });
 
     document.getElementById("filter-all-btn").addEventListener("click", () => {
-      document.getElementById("summary-date").value = "";
+      viewAllDays = true;
       refreshFieldStyles();
       renderVentesTable();
       updateFooterSummary();
@@ -931,11 +1227,11 @@
 
     function renderVentesTable() {
       const salesBody = document.getElementById("sales-body");
-      const colsCount = currentRole === "super_admin" ? 6 : 4;
-      const filtered = getFilteredVentes();
+      const colsCount = currentRole === "super_admin" ? 7 : 5;
+      const filtered = getTableVentes();
 
       if (!filtered.length) {
-        salesBody.innerHTML = `<tr><td colspan="${colsCount}">Aucune vente enregistrée pour cette sélection.</td></tr>`;
+        salesBody.innerHTML = `<tr><td colspan="${colsCount}">Aucune vente enregistrée pour ce critère.</td></tr>`;
         return;
       }
 
@@ -966,7 +1262,8 @@
 
         for (const [minuteKey, items] of byReceiptTime.entries()) {
           receiptCounter += 1;
-          html += `<tr class="receipt-row"><td colspan="${colsCount}">Reçu #${receiptCounter} — ${escapeHtml(minuteKey)}</td></tr>`;
+          const clientPhone = items[0]?.telephone_client ? ` — Client : ${escapeHtml(items[0].telephone_client)}` : "";
+          html += `<tr class="receipt-row"><td colspan="${colsCount}">Reçu #${receiptCounter} — ${escapeHtml(minuteKey)}${clientPhone}</td></tr>`;
 
           for (const v of items) {
             const heurePrecise = new Date(v.created_at).toLocaleString("fr-FR", {
@@ -975,6 +1272,7 @@
             html += `
               <tr>
                 <td>${heurePrecise}</td>
+                <td>${v.telephone_client ? escapeHtml(v.telephone_client) : "-"}</td>
                 <td><strong>${escapeHtml(v.nom_produit)}</strong></td>
                 <td>${v.quantite_vendue}</td>
                 ${currentRole === "super_admin" ? `<td>${Number(v.prix_initial ?? 0).toFixed(2)}</td>` : ""}
@@ -991,12 +1289,12 @@
 
     async function chargerVentes() {
       const salesBody = document.getElementById("sales-body");
-      const colsCount = currentRole === "super_admin" ? 6 : 4;
+      const colsCount = currentRole === "super_admin" ? 7 : 5;
       const { data, error } = await sb
         .from("ventes")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(500);
 
       if (error) {
         salesBody.innerHTML = `<tr><td colspan="${colsCount}">Erreur : ${escapeHtml(error.message)}</td></tr>`;
