@@ -538,8 +538,7 @@
   <script>
     const SUPABASE_URL = "https://hhqdulyklgmnxuoehfql.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_HFyz52SLbwEPIyoPtkxECQ_oMf6Ydgc";
-    const PRODUCT_EDIT_DIGEST = "56ef4200766f05568cc5d5642a70525066e9584a125a1bbcefafe25c6c8a50b8";
-    const RECEIPT_TIMEOUT_MS = 2 * 60 * 1000;
+    const SUPER_ADMIN_CONFIRM_PASSWORD = "Bu@@293304 PBK";
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentUser = null;
@@ -553,8 +552,6 @@
     let userActiveTab = "vente";
     let showTotalsInFooter = true;
     let viewAllDays = false;
-    let requirePasswordOnTabReturn = false;
-    let receiptHideTimer = null;
 
     const loginSection = document.getElementById("login-section");
     const appSection = document.getElementById("app-section");
@@ -570,56 +567,6 @@
     const pageAdminCatalogue = document.getElementById("page-admin-catalogue");
     const roleWarning = document.getElementById("role-warning");
     const lowStockBanner = document.getElementById("low-stock-banner");
-
-    async function sha256Hex(value) {
-      const data = new TextEncoder().encode(value);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-      return Array.from(new Uint8Array(hashBuffer))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    }
-
-    async function verifyProductEditCode(inputVal) {
-      if (!inputVal) return false;
-      const digest = await sha256Hex(inputVal.trim());
-      return digest === PRODUCT_EDIT_DIGEST;
-    }
-
-    function hideReceiptNow() {
-      if (receiptHideTimer) {
-        clearTimeout(receiptHideTimer);
-        receiptHideTimer = null;
-      }
-      lastReceiptData = null;
-      document.getElementById("last-receipt-box").classList.add("hidden");
-    }
-
-    function showReceiptWithTwoMinuteExpiry(receipt) {
-      hideReceiptNow();
-      lastReceiptData = receipt;
-      document.getElementById("last-receipt-text").textContent = buildWhatsAppReceiptText(receipt);
-      document.getElementById("last-receipt-box").classList.remove("hidden");
-      receiptHideTimer = setTimeout(() => {
-        hideReceiptNow();
-      }, RECEIPT_TIMEOUT_MS);
-    }
-
-    function lockToLoginOnTabLeave() {
-      if (!currentUser || appSection.classList.contains("hidden")) return;
-      requirePasswordOnTabReturn = true;
-      adminPagesUnlocked = false;
-      hideReceiptNow();
-      document.getElementById("login-password").value = "";
-      appSection.classList.add("hidden");
-      userBar.classList.add("hidden");
-      loginSection.classList.remove("hidden");
-    }
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        lockToLoginOnTabLeave();
-      }
-    });
 
     function toLocalDateStr(dateObj) {
       return [
@@ -773,16 +720,14 @@
       applyNavigation();
     });
 
-    async function switchAdminPage(targetPage) {
+    function switchAdminPage(targetPage) {
       const needsPassword = targetPage === "ajout" || targetPage === "catalogue";
       if (needsPassword && !adminPagesUnlocked) {
         const saisie = prompt("Entrez le mot de passe Super Admin pour accéder à cette page :");
-        if (saisie === null) return;
-        const ok = await verifyProductEditCode(saisie);
-        if (ok) {
+        if (saisie === SUPER_ADMIN_CONFIRM_PASSWORD) {
           adminPagesUnlocked = true;
         } else {
-          alert("Mot de passe incorrect.");
+          if (saisie !== null) alert("Mot de passe incorrect.");
           return;
         }
       }
@@ -801,7 +746,7 @@
       lowStockBanner.classList.add("hidden");
 
       const { data: { session } } = await sb.auth.getSession();
-      if (!session || requirePasswordOnTabReturn) {
+      if (!session) {
         loginSection.classList.remove("hidden");
         appSection.classList.add("hidden");
         userBar.classList.add("hidden");
@@ -854,16 +799,14 @@
         setStatus(statusEl, "Échec de connexion : " + error.message, true);
         return;
       }
-      requirePasswordOnTabReturn = false;
-      document.getElementById("login-password").value = "";
       setStatus(statusEl, "");
       await initSession();
     });
 
     document.getElementById("logout-btn").addEventListener("click", async () => {
       cartItems = [];
-      hideReceiptNow();
-      requirePasswordOnTabReturn = false;
+      lastReceiptData = null;
+      document.getElementById("last-receipt-box").classList.add("hidden");
       adminPagesUnlocked = false;
       adminActivePage = "vente";
       await sb.auth.signOut();
@@ -906,541 +849,352 @@
                 <td><strong>${escapeHtml(p.nom)}</strong></td>
                 <td>${p.quantite}</td>
                 <td>${seuil}</td>
-                <td><span class="${bas ? "pill-low" : "pill-ok"}">${bas ? "Stock bas" : "OK"}</span></td>
+                <td>${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">Normal</span>'}</td>
               </tr>
             `;
           }).join("");
         }
-        lowStockBanner.classList.add("hidden");
-        return;
       }
 
-      const lowStockItems = produitsCache.filter(p => Number(p.quantite) <= Number(p.seuil_alerte ?? 5));
-      if (lowStockItems.length > 0) {
-        lowStockBanner.textContent = "Alerte stock bas : " + lowStockItems
-          .map(p => `${p.nom} (reste ${p.quantite}, seuil ${p.seuil_alerte ?? 5})`)
-          .join(" • ");
-        lowStockBanner.classList.remove("hidden");
-      } else {
-        lowStockBanner.classList.add("hidden");
-      }
+      if (currentRole === "super_admin") {
+        const produitsEnAlerte = produitsCache.filter(
+          p => Number(p.quantite) <= Number(p.seuil_alerte ?? 5)
+        );
+        if (produitsEnAlerte.length > 0) {
+          const noms = produitsEnAlerte
+            .map(p => `${p.nom} (${p.quantite}/${p.seuil_alerte ?? 5})`)
+            .join(", ");
+          lowStockBanner.textContent = `Alerte stock bas (${produitsEnAlerte.length}) : ${noms}`;
+          lowStockBanner.classList.remove("hidden");
+        } else {
+          lowStockBanner.classList.add("hidden");
+        }
 
-      const tbody = document.getElementById("stock-body");
-      if (!produitsCache.length) {
-        tbody.innerHTML = '<tr><td colspan="6">Aucun produit enregistré.</td></tr>';
-        return;
+        const stockBody = document.getElementById("stock-body");
+        if (!produitsCache.length) {
+          stockBody.innerHTML = '<tr><td colspan="6">Aucun produit en stock.</td></tr>';
+        } else {
+          stockBody.innerHTML = produitsCache.map(p => {
+            const seuil = Number(p.seuil_alerte ?? 5);
+            const bas = Number(p.quantite) <= seuil;
+            return `
+              <tr>
+                <td><strong>${escapeHtml(p.nom)}</strong></td>
+                <td>${p.quantite}</td>
+                <td class="right">
+                  <div class="seuil-box" style="display:flex; justify-content:flex-end; align-items:center; gap:6px;">
+                    <input id="seuil-input-${p.id}" class="small-input" type="number" min="0" value="${seuil}" />
+                    <button class="secondary" type="button" onclick="majSeuil(${p.id})">Valider</button>
+                  </div>
+                </td>
+                <td>${Number(p.prix_initial ?? p.prix ?? 0).toFixed(2)}</td>
+                <td>${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">Normal</span>'}</td>
+                <td class="right">
+                  <div class="row-actions">
+                    <input id="arrivage-input-${p.id}" class="small-input" type="number" min="1" step="1" placeholder="+Qté" />
+                    <button class="secondary" type="button" onclick="ajouterArrivage(${p.id})">Ajouter</button>
+                    <button class="secondary" type="button" onclick="ajustStock(${p.id}, ${Number(p.quantite) - 1})">-1</button>
+                    <button class="danger" type="button" onclick="supprimerProduit(${p.id})">Supprimer</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join("");
+          refreshFieldStyles();
+        }
       }
-
-      tbody.innerHTML = produitsCache.map(p => {
-        const seuil = Number(p.seuil_alerte ?? 5);
-        const bas = Number(p.quantite) <= seuil;
-        return `
-          <tr>
-            <td><strong>${escapeHtml(p.nom)}</strong></td>
-            <td>${p.quantite}</td>
-            <td class="right">${seuil}</td>
-            <td>${Number(p.prix_initial).toFixed(2)}</td>
-            <td><span class="${bas ? "pill-low" : "pill-ok"}">${bas ? "Stock bas" : "OK"}</span></td>
-            <td class="right">
-              <div class="row-actions">
-                <input type="number" min="1" step="1" placeholder="+Qté" id="restock-${p.id}" class="small-input is-empty" />
-                <button class="secondary" type="button" onclick="ajouterArrivage('${p.id}')">+ Arrivage</button>
-                <button class="danger" type="button" onclick="supprimerProduit('${p.id}', '${escapeHtml(p.nom).replace(/'/g, "\\'")}')">Supprimer</button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("");
-      refreshFieldStyles();
     }
 
-    document.getElementById("product-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const statusEl = document.getElementById("prod-status");
-      const passInput = document.getElementById("prod-admin-pass");
-      const nom = document.getElementById("prod-name").value.trim();
-      const quantite = parseInt(document.getElementById("prod-qty").value, 10);
-      const prix_initial = parseFloat(document.getElementById("prod-init-price").value);
-      const seuil_alerte = parseInt(document.getElementById("prod-alert").value, 10);
-
-      const okPass = await verifyProductEditCode(passInput.value);
-      if (!okPass) {
-        setStatus(statusEl, "Mot de passe Super Admin incorrect.", true);
-        return;
-      }
-      if (!nom || isNaN(quantite) || quantite < 0 || isNaN(prix_initial) || prix_initial < 0 || isNaN(seuil_alerte) || seuil_alerte < 0) {
-        setStatus(statusEl, "Veuillez saisir des valeurs valides.", true);
-        return;
-      }
-
-      setStatus(statusEl, "Enregistrement du produit...");
-      const { error } = await sb.from("produits").insert({
-        nom,
-        quantite,
-        prix_initial,
-        seuil_alerte
-      });
-
-      if (error) {
-        setStatus(statusEl, "Erreur ajout produit : " + error.message, true);
-        return;
-      }
-
-      e.target.reset();
-      refreshFieldStyles();
-      setStatus(statusEl, "Produit ajouté au catalogue.");
-      await chargerProduits();
-    });
-
-    window.ajouterArrivage = async function(produitId) {
-      const tableStatus = document.getElementById("stock-table-status");
-      const input = document.getElementById("restock-" + produitId);
-      const ajout = parseInt(input.value, 10);
-      if (isNaN(ajout) || ajout <= 0) {
-        setStatus(tableStatus, "Entrez une quantité d'arrivage supérieure à 0.", true);
-        return;
-      }
-      const saisie = prompt("Confirmez avec le mot de passe Super Admin pour ajouter cet arrivage :");
-      if (saisie === null) return;
-      const okPass = await verifyProductEditCode(saisie);
-      if (!okPass) {
-        setStatus(tableStatus, "Mot de passe Super Admin incorrect.", true);
-        return;
-      }
-      const prod = produitsCache.find(p => String(p.id) === String(produitId));
-      if (!prod) return;
-
-      const nouvelleQte = Number(prod.quantite) + ajout;
-      const { error } = await sb
-        .from("produits")
-        .update({ quantite: nouvelleQte })
-        .eq("id", produitId);
-
-      if (error) {
-        setStatus(tableStatus, "Erreur arrivage : " + error.message, true);
-        return;
-      }
-      input.value = "";
-      refreshFieldStyles();
-      setStatus(tableStatus, `Arrivage de +${ajout} ajouté à ${prod.nom}.`);
-      await chargerProduits();
-    };
-
-    window.supprimerProduit = async function(produitId, nomProduit) {
-      const tableStatus = document.getElementById("stock-table-status");
-      const saisie = prompt(`Confirmez avec le mot de passe Super Admin pour supprimer "${nomProduit}" :`);
-      if (saisie === null) return;
-      const okPass = await verifyProductEditCode(saisie);
-      if (!okPass) {
-        setStatus(tableStatus, "Mot de passe Super Admin incorrect.", true);
-        return;
-      }
-      const { error } = await sb.from("produits").delete().eq("id", produitId);
-      if (error) {
-        setStatus(tableStatus, "Erreur suppression produit : " + error.message, true);
-        return;
-      }
-      setStatus(tableStatus, `Produit "${nomProduit}" supprimé.`);
-      await chargerProduits();
-    };
-
     function renderCart() {
-      const tbody = document.getElementById("cart-body");
+      const cartBody = document.getElementById("cart-body");
       const previewEl = document.getElementById("sale-preview");
 
       if (!cartItems.length) {
-        tbody.innerHTML = '<tr><td colspan="4">Aucun produit ajouté à la vente.</td></tr>';
+        cartBody.innerHTML = '<tr><td colspan="4">Aucun produit ajouté à la vente.</td></tr>';
         previewEl.textContent = "";
         return;
       }
 
-      let totalGeneral = 0;
-      tbody.innerHTML = cartItems.map((item, idx) => {
-        const sousTotal = item.qty * item.prixVente;
-        totalGeneral += sousTotal;
-        return `
-          <tr>
-            <td><strong>${escapeHtml(item.nom)}</strong></td>
-            <td>${item.qty}</td>
-            <td>${item.prixVente.toFixed(2)}</td>
-            <td class="right">
-              <button class="danger" type="button" onclick="retirerDuPanier(${idx})">Retirer</button>
-            </td>
-          </tr>
-        `;
-      }).join("");
+      const grandTotal = cartItems.reduce((acc, item) => acc + item.qty * item.prixVente, 0);
+      cartBody.innerHTML = cartItems.map((item, index) => `
+        <tr>
+          <td><strong>${escapeHtml(item.nom)}</strong></td>
+          <td>${item.qty}</td>
+          <td>${item.prixVente.toFixed(2)}</td>
+          <td class="right">
+            <div class="row-actions">
+              <button class="danger" type="button" onclick="retirerDuPanier(${index})">Retirer</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
 
-      previewEl.textContent = `Total panier (${cartItems.length} article(s)) : ${totalGeneral.toFixed(2)}`;
+      previewEl.textContent = `Total de la vente (${cartItems.length} article${cartItems.length > 1 ? "s" : ""}) : ${grandTotal.toFixed(2)}`;
     }
 
-    window.retirerDuPanier = function(index) {
+    window.retirerDuPanier = (index) => {
       cartItems.splice(index, 1);
       renderCart();
     };
 
+    function ajouterProduitLigne() {
+      const cartStatus = document.getElementById("cart-status");
+      const prodSelect = document.getElementById("sale-product");
+      const qtyInput = document.getElementById("sale-qty");
+      const priceInput = document.getElementById("sale-price");
+
+      const prodIdRaw = prodSelect.value;
+      const qtyRaw = qtyInput.value.trim();
+      const priceRaw = priceInput.value.trim();
+
+      if (!prodIdRaw) {
+        setStatus(cartStatus, "Veuillez sélectionner un produit.", true);
+        return false;
+      }
+      if (qtyRaw === "" || priceRaw === "") {
+        setStatus(cartStatus, "Saisissez la quantité et le prix.", true);
+        return false;
+      }
+
+      const prodId = Number(prodIdRaw);
+      const qty = Number(qtyRaw);
+      const prixVente = Number(priceRaw);
+      const produit = produitsCache.find(p => Number(p.id) === prodId);
+
+      if (!produit) {
+        setStatus(cartStatus, "Produit introuvable.", true);
+        return false;
+      }
+      if (!Number.isInteger(qty) || qty <= 0) {
+        setStatus(cartStatus, "La quantité vendue doit être supérieure à 0.", true);
+        return false;
+      }
+      if (Number.isNaN(prixVente) || prixVente < 0) {
+        setStatus(cartStatus, "Le prix de vente unitaire doit être valide.", true);
+        return false;
+      }
+
+      const dejaDansPanier = cartItems
+        .filter(i => Number(i.produitId) === prodId)
+        .reduce((sum, i) => sum + i.qty, 0);
+
+      if (dejaDansPanier + qty > Number(produit.quantite)) {
+        setStatus(cartStatus, `Stock insuffisant pour ${produit.nom} (disponible : ${produit.quantite}).`, true);
+        return false;
+      }
+
+      cartItems.push({
+        produitId: produit.id,
+        nom: produit.nom,
+        qty,
+        prixVente,
+        prixInitial: Number(produit.prix_initial ?? produit.prix ?? 0)
+      });
+
+      prodSelect.value = "";
+      qtyInput.value = "";
+      priceInput.value = "";
+      delete qtyInput.dataset.clearedOnce;
+      delete priceInput.dataset.clearedOnce;
+      refreshFieldStyles();
+      setStatus(cartStatus, "Produit ajouté à la vente. Vous pouvez en ajouter un autre.");
+      renderCart();
+      prodSelect.focus();
+      return true;
+    }
+
     document.getElementById("cart-add-form").addEventListener("submit", (e) => {
       e.preventDefault();
-      const cartStatus = document.getElementById("cart-status");
-      const saleStatus = document.getElementById("sale-status");
-      setStatus(cartStatus, "");
-      setStatus(saleStatus, "");
+      ajouterProduitLigne();
+    });
 
-      const produitId = document.getElementById("sale-product").value;
-      const qty = parseInt(document.getElementById("sale-qty").value, 10);
-      const prixVente = parseFloat(document.getElementById("sale-price").value);
-      const clientPhone = document.getElementById("sale-client-phone").value.trim();
-
-      if (!produitId) {
-        setStatus(cartStatus, "Sélectionnez un produit.", true);
-        return;
-      }
-      if (isNaN(qty) || qty <= 0) {
-        setStatus(cartStatus, "Quantité vendue invalide.", true);
-        return;
-      }
-      if (isNaN(prixVente) || prixVente < 0) {
-        setStatus(cartStatus, "Prix de vente invalide.", true);
-        return;
-      }
-      if (!/^[0-9]{10}$/.test(clientPhone)) {
-        setStatus(cartStatus, "Le numéro de téléphone doit contenir exactement 10 chiffres.", true);
-        return;
-      }
-
-      const prod = produitsCache.find(p => String(p.id) === String(produitId));
-      if (!prod) {
-        setStatus(cartStatus, "Produit introuvable.", true);
-        return;
-      }
-
-      const existing = cartItems.find(item => String(item.produitId) === String(produitId));
-      const futureQty = (existing ? existing.qty : 0) + qty;
-      if (futureQty > Number(prod.quantite)) {
-        setStatus(cartStatus, `Stock insuffisant pour ${prod.nom} (disponible : ${prod.quantite}).`, true);
-        return;
-      }
-
-      if (existing) {
-        existing.qty = futureQty;
-        existing.prixVente = prixVente;
-      } else {
-        cartItems.push({
-          produitId: prod.id,
-          nom: prod.nom,
-          qty,
-          prixVente,
-          prixInitial: Number(prod.prix_initial)
-        });
-      }
-
-      document.getElementById("sale-qty").value = "";
-      document.getElementById("sale-price").value = "";
-      refreshFieldStyles();
-      renderCart();
+    ["sale-product", "sale-qty", "sale-price"].forEach(id => {
+      document.getElementById(id).addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          ajouterProduitLigne();
+        }
+      });
     });
 
     document.getElementById("validate-sale-btn").addEventListener("click", async () => {
-      const saleStatus = document.getElementById("sale-status");
-      const clientPhone = document.getElementById("sale-client-phone").value.trim();
-      setStatus(saleStatus, "");
+      const statusEl = document.getElementById("sale-status");
+      const phoneInput = document.getElementById("sale-client-phone");
+      const phoneRaw = phoneInput.value.trim();
+
+      if (phoneRaw !== "" && !/^\d{10}$/.test(phoneRaw)) {
+        setStatus(statusEl, "Le numéro de téléphone doit contenir 10 chiffres (ou rester vide).", true);
+        phoneInput.focus();
+        return;
+      }
+
+      const hasPendingDraft =
+        document.getElementById("sale-product").value !== "" ||
+        document.getElementById("sale-qty").value.trim() !== "" ||
+        document.getElementById("sale-price").value.trim() !== "";
+
+      if (hasPendingDraft) {
+        const added = ajouterProduitLigne();
+        if (!added) return;
+      }
 
       if (!cartItems.length) {
-        setStatus(saleStatus, "Ajoutez au moins un produit au panier avant de valider.", true);
-        return;
-      }
-      if (!/^[0-9]{10}$/.test(clientPhone)) {
-        setStatus(saleStatus, "Le numéro de téléphone doit contenir exactement 10 chiffres.", true);
+        setStatus(statusEl, "Ajoutez au moins un produit avant de valider la vente.", true);
         return;
       }
 
+      setStatus(statusEl, "Validation de la vente en cours...");
+
       for (const item of cartItems) {
-        const prod = produitsCache.find(p => String(p.id) === String(item.produitId));
-        if (!prod || item.qty > Number(prod.quantite)) {
-          setStatus(saleStatus, `Stock insuffisant pour ${item.nom}.`, true);
+        const produit = produitsCache.find(p => Number(p.id) === Number(item.produitId));
+        if (!produit || item.qty > Number(produit.quantite)) {
+          setStatus(statusEl, `Stock insuffisant pour ${item.nom}.`, true);
           return;
         }
       }
 
-      setStatus(saleStatus, "Validation de la vente en cours...");
-      const receiptId = "REC-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
-      const nowIso = new Date().toISOString();
-      const dateStr = new Date(nowIso).toLocaleString("fr-FR");
+      const lignesVentes = cartItems.map(item => ({
+        produit_id: item.produitId,
+        nom_produit: item.nom,
+        quantite_vendue: item.qty,
+        prix_initial: item.prixInitial,
+        prix_vente: item.prixVente,
+        total_vente: item.qty * item.prixVente,
+        telephone_client: phoneRaw || null,
+        vendu_par: currentUser.id
+      }));
 
-      const insertedItems = [];
-      let totalSale = 0;
+      const { error: saleErr } = await sb.from("ventes").insert(lignesVentes);
+      if (saleErr) {
+        setStatus(statusEl, "Erreur d'enregistrement de la vente : " + saleErr.message, true);
+        return;
+      }
 
       for (const item of cartItems) {
-        const prod = produitsCache.find(p => String(p.id) === String(item.produitId));
-        const { error: saleErr } = await sb.from("ventes").insert({
-          produit_id: item.produitId,
-          produit_nom: item.nom,
-          quantite_vendue: item.qty,
-          prix_initial: item.prixInitial,
-          prix_vente: item.prixVente,
-          client_telephone: clientPhone,
-          receipt_id: receiptId,
-          created_at: nowIso
-        });
-
-        if (saleErr) {
-          setStatus(saleStatus, "Erreur enregistrement vente : " + saleErr.message, true);
-          return;
-        }
-
-        const nouveauStock = Number(prod.quantite) - item.qty;
+        const produit = produitsCache.find(p => Number(p.id) === Number(item.produitId));
+        const nouveauStock = Number(produit.quantite) - item.qty;
         const { error: stockErr } = await sb
           .from("produits")
           .update({ quantite: nouveauStock })
           .eq("id", item.produitId);
 
         if (stockErr) {
-          setStatus(saleStatus, "Vente enregistrée mais erreur stock : " + stockErr.message, true);
+          setStatus(statusEl, "Vente ajoutée, mais erreur mise à jour stock : " + stockErr.message, true);
           return;
         }
-
-        insertedItems.push({ ...item });
-        totalSale += item.qty * item.prixVente;
       }
 
-      showReceiptWithTwoMinuteExpiry({
-        receiptId,
-        dateStr,
-        phone: clientPhone,
-        items: insertedItems,
-        total: totalSale
-      });
+      const totalCommande = cartItems.reduce((acc, item) => acc + item.qty * item.prixVente, 0);
+      lastReceiptData = {
+        dateStr: new Date().toLocaleString("fr-FR", {
+          day: "2-digit", month: "2-digit", year: "numeric",
+          hour: "2-digit", minute: "2-digit"
+        }),
+        phone: phoneRaw,
+        items: [...cartItems],
+        total: totalCommande
+      };
+
+      const receiptBodyLines = lastReceiptData.items.map(item =>
+        `• ${item.nom} : ${item.qty} x ${item.prixVente.toFixed(2)} = ${(item.qty * item.prixVente).toFixed(2)}`
+      ).join("\n");
+
+      document.getElementById("last-receipt-text").textContent = [
+        `Date : ${lastReceiptData.dateStr}`,
+        lastReceiptData.phone ? `Téléphone : ${lastReceiptData.phone}` : null,
+        "Articles :",
+        receiptBodyLines,
+        "------------------------",
+        `TOTAL PAYÉ : ${lastReceiptData.total.toFixed(2)}`,
+        "",
+        "Merci d'être passé chez PBK Horizon!"
+      ].filter(Boolean).join("\n");
+
+      document.getElementById("last-receipt-box").classList.remove("hidden");
 
       cartItems = [];
-      document.getElementById("sale-product").value = "";
-      document.getElementById("sale-qty").value = "";
-      document.getElementById("sale-price").value = "";
-      document.getElementById("sale-client-phone").value = "";
+      phoneInput.value = "";
+      document.getElementById("cart-status").textContent = "";
       refreshFieldStyles();
       renderCart();
-      setStatus(saleStatus, `Vente validée (${totalSale.toFixed(2)}). Reçu prêt pour WhatsApp.`);
-
+      setStatus(statusEl, "Vente validée et stock mis à jour.");
       await chargerProduits();
       await chargerVentes();
     });
 
     document.getElementById("send-whatsapp-btn").addEventListener("click", () => {
-      const saleStatus = document.getElementById("sale-status");
       if (!lastReceiptData) return;
-
-      const waPhone = formatWhatsAppNumber(lastReceiptData.phone);
-      const messageText = buildWhatsAppReceiptText(lastReceiptData);
-      const url = waPhone
-        ? `https://wa.me/${waPhone}?text=${encodeURIComponent(messageText)}`
-        : `https://wa.me/?text=${encodeURIComponent(messageText)}`;
-
+      const text = encodeURIComponent(buildWhatsAppReceiptText(lastReceiptData));
+      const waNumber = formatWhatsAppNumber(lastReceiptData.phone);
+      const url = waNumber
+        ? `https://wa.me/${waNumber}?text=${text}`
+        : `https://wa.me/?text=${text}`;
       window.open(url, "_blank", "noopener,noreferrer");
-      hideReceiptNow();
-      setStatus(saleStatus, "Reçu envoyé sur WhatsApp.");
     });
 
     document.getElementById("copy-receipt-btn").addEventListener("click", async () => {
-      const saleStatus = document.getElementById("sale-status");
       if (!lastReceiptData) return;
-      const messageText = buildWhatsAppReceiptText(lastReceiptData);
       try {
-        await navigator.clipboard.writeText(messageText);
-        setStatus(saleStatus, "Reçu copié dans le presse-papiers.");
-      } catch (_) {
-        setStatus(saleStatus, "Copie automatique non autorisée sur ce navigateur.", true);
+        await navigator.clipboard.writeText(buildWhatsAppReceiptText(lastReceiptData));
+        setStatus(document.getElementById("sale-status"), "Reçu copié dans le presse-papiers.");
+      } catch {
+        setStatus(document.getElementById("sale-status"), "Impossible de copier automatiquement.", true);
       }
     });
 
-    window.envoyerRecuLigneVente = function(venteId) {
-      const vente = ventesCache.find(v => String(v.id) === String(venteId));
-      if (!vente) return;
-      const qty = Number(vente.quantite_vendue);
-      const pv = Number(vente.prix_vente);
-      const phone = (vente.client_telephone || "").replace(/\D/g, "").slice(0, 10);
-      const dateStr = new Date(vente.created_at).toLocaleString("fr-FR");
-
-      const singleReceipt = {
-        receiptId: vente.receipt_id || vente.id,
-        dateStr,
-        phone,
-        items: [{
-          nom: vente.produit_nom,
-          qty,
-          prixVente: pv
-        }],
-        total: qty * pv
-      };
-
-      const waPhone = formatWhatsAppNumber(phone);
-      const messageText = buildWhatsAppReceiptText(singleReceipt);
-      const url = waPhone
-        ? `https://wa.me/${waPhone}?text=${encodeURIComponent(messageText)}`
-        : `https://wa.me/?text=${encodeURIComponent(messageText)}`;
-
-      window.open(url, "_blank", "noopener,noreferrer");
-    };
-
-    async function chargerVentes() {
-      const { data, error } = await sb
-        .from("ventes")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(500);
-
-      if (error) {
-        document.getElementById("sales-body").innerHTML =
-          `<tr><td colspan="7">Erreur chargement ventes : ${escapeHtml(error.message)}</td></tr>`;
-        return;
-      }
-      ventesCache = data || [];
-      renderVentesTable();
+    function getTargetDayStr() {
+      const dateInput = document.getElementById("summary-date").value;
+      return dateInput || toLocalDateStr(new Date());
     }
 
-    function renderVentesTable() {
-      const tbody = document.getElementById("sales-body");
-      const selectedDate = document.getElementById("summary-date").value || toLocalDateStr(new Date());
-      const phoneFilter = document.getElementById("search-phone-input").value.replace(/\D/g, "").slice(0, 10);
+    function getTableVentes() {
+      const phoneQuery = document.getElementById("search-phone-input").value.trim();
 
-      let filteredVentes = ventesCache;
-      if (phoneFilter) {
-        filteredVentes = filteredVentes.filter(v =>
-          String(v.client_telephone || "").replace(/\D/g, "").includes(phoneFilter)
+      if (phoneQuery !== "") {
+        return ventesCache.filter(v =>
+          String(v.telephone_client || "").includes(phoneQuery)
         );
-      } else if (!viewAllDays) {
-        filteredVentes = filteredVentes.filter(v => toLocalDateStr(new Date(v.created_at)) === selectedDate);
       }
 
-      if (!filteredVentes.length) {
-        tbody.innerHTML = `<tr><td colspan="${currentRole === "super_admin" ? 7 : 5}">Aucune vente enregistrée pour ce filtre.</td></tr>`;
-      } else {
-        const groupedByDay = new Map();
-        for (const v of filteredVentes) {
-          const dayKey = toLocalDateStr(new Date(v.created_at));
-          if (!groupedByDay.has(dayKey)) groupedByDay.set(dayKey, []);
-          groupedByDay.get(dayKey).push(v);
-        }
-
-        const htmlRows = [];
-        for (const [dayKey, daySales] of groupedByDay.entries()) {
-          htmlRows.push(`
-            <tr class="group-row">
-              <td colspan="${currentRole === "super_admin" ? 7 : 5}">Jour : ${escapeHtml(dayKey)} (${daySales.length} ligne(s))</td>
-            </tr>
-          `);
-
-          const groupedByReceipt = new Map();
-          for (const v of daySales) {
-            const rKey = v.receipt_id ? `REC:${v.receipt_id}` : `SINGLE:${v.id}`;
-            if (!groupedByReceipt.has(rKey)) groupedByReceipt.set(rKey, []);
-            groupedByReceipt.get(rKey).push(v);
-          }
-
-          for (const [, rSales] of groupedByReceipt.entries()) {
-            const firstSale = rSales[0];
-            const heureStr = new Date(firstSale.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-            const receiptTotal = rSales.reduce((acc, s) => acc + Number(s.quantite_vendue) * Number(s.prix_vente), 0);
-            const phoneDisplay = firstSale.client_telephone ? escapeHtml(firstSale.client_telephone) : "-";
-
-            if (rSales.length > 1) {
-              htmlRows.push(`
-                <tr class="receipt-row">
-                  <td colspan="${currentRole === "super_admin" ? 7 : 5}">Reçu ${escapeHtml(heureStr)} • Tél: ${phoneDisplay} • Total reçu: ${receiptTotal.toFixed(2)}</td>
-                </tr>
-              `);
-            }
-
-            for (const v of rSales) {
-              const dt = new Date(v.created_at).toLocaleString("fr-FR");
-              const qty = Number(v.quantite_vendue);
-              const pi = Number(v.prix_initial);
-              const pv = Number(v.prix_vente);
-              const vPhone = v.client_telephone ? escapeHtml(v.client_telephone) : "-";
-
-              htmlRows.push(`
-                <tr>
-                  <td>${escapeHtml(dt)}</td>
-                  <td>${vPhone}</td>
-                  <td>${escapeHtml(v.produit_nom)}</td>
-                  <td>${qty}</td>
-                  ${currentRole === "super_admin" ? `<td>${pi.toFixed(2)}</td>` : ""}
-                  <td>${pv.toFixed(2)}</td>
-                  ${currentRole === "super_admin" ? `
-                    <td class="right">
-                      <div class="row-actions">
-                        <button class="whatsapp" type="button" onclick="envoyerRecuLigneVente('${v.id}')">WhatsApp</button>
-                        <button class="danger" type="button" onclick="annulerVente('${v.id}')">Annuler</button>
-                      </div>
-                    </td>
-                  ` : ""}
-                </tr>
-              `);
-            }
-          }
-        }
-
-        tbody.innerHTML = htmlRows.join("");
-      }
-
-      calculerResumeJour(selectedDate);
+      if (viewAllDays) return ventesCache;
+      const targetDay = getTargetDayStr();
+      return ventesCache.filter(v => {
+        if (!v.created_at) return false;
+        return toLocalDateStr(new Date(v.created_at)) === targetDay;
+      });
     }
 
-    function calculerResumeJour(dateStr) {
-      const footerDateEl = document.getElementById("footer-date");
-      const footerSoldEl = document.getElementById("footer-total-sold");
-      const footerGainEl = document.getElementById("footer-total-gain");
+    function updateFooterSummary() {
+      const targetDay = getTargetDayStr();
+      document.getElementById("footer-date").textContent = `Date : ${targetDay}`;
 
       if (!showTotalsInFooter) {
-        footerDateEl.textContent = `Date : ${dateStr}`;
-        footerSoldEl.textContent = "Total vendu de la journée : masqué";
-        footerGainEl.textContent = "Total gains de la journée : masqué";
+        document.getElementById("footer-total-sold").textContent = "Total vendu de la journée : 0.00";
+        document.getElementById("footer-total-gain").textContent = "Total gains de la journée : 0.00";
         return;
       }
 
-      const ventesDuJour = ventesCache.filter(v => toLocalDateStr(new Date(v.created_at)) === dateStr);
-      let totalVendu = 0;
-      let totalGain = 0;
+      const daySales = ventesCache.filter(v => {
+        if (!v.created_at) return false;
+        return toLocalDateStr(new Date(v.created_at)) === targetDay;
+      });
 
-      for (const v of ventesDuJour) {
-        const qty = Number(v.quantite_vendue);
-        const pv = Number(v.prix_vente);
-        const pi = Number(v.prix_initial);
-        totalVendu += qty * pv;
-        totalGain += (pv - pi) * qty;
-      }
+      const totalVenduJournee = daySales.reduce((acc, v) => {
+        const qte = Number(v.quantite_vendue) || 0;
+        const pv = Number(v.prix_vente) || 0;
+        return acc + (qte * pv);
+      }, 0);
 
-      footerDateEl.textContent = `Date : ${dateStr}`;
-      footerSoldEl.textContent = `Total vendu de la journée : ${totalVendu.toFixed(2)}`;
-      footerGainEl.textContent = `Total gains de la journée : ${totalGain.toFixed(2)}`;
+      const totalGainsJournee = daySales.reduce((acc, v) => {
+        const qte = Number(v.quantite_vendue) || 0;
+        const pv = Number(v.prix_vente) || 0;
+        const pi = Number(v.prix_initial) || 0;
+        return acc + ((pv - pi) * qte);
+      }, 0);
+
+      document.getElementById("footer-total-sold").textContent = `Total vendu de la journée : ${totalVenduJournee.toFixed(2)}`;
+      document.getElementById("footer-total-gain").textContent = `Total gains de la journée : ${totalGainsJournee.toFixed(2)}`;
     }
-
-    document.getElementById("calc-summary-btn").addEventListener("click", () => {
-      showTotalsInFooter = true;
-      const dateStr = document.getElementById("summary-date").value || toLocalDateStr(new Date());
-      calculerResumeJour(dateStr);
-    });
-
-    document.getElementById("summary-date").addEventListener("change", () => {
-      viewAllDays = false;
-      renderVentesTable();
-    });
-
-    document.getElementById("filter-today-btn").addEventListener("click", () => {
-      viewAllDays = false;
-      document.getElementById("summary-date").value = toLocalDateStr(new Date());
-      renderVentesTable();
-    });
-
-    document.getElementById("filter-yesterday-btn").addEventListener("click", () => {
-      viewAllDays = false;
-      const d = new Date();
-      d.setDate(d.getDate() - 1);
-      document.getElementById("summary-date").value = toLocalDateStr(d);
-      renderVentesTable();
-    });
-
-    document.getElementById("filter-all-btn").addEventListener("click", () => {
-      viewAllDays = true;
-      renderVentesTable();
-    });
 
     document.getElementById("clear-phone-search-btn").addEventListener("click", () => {
       document.getElementById("search-phone-input").value = "";
@@ -1448,34 +1202,246 @@
       renderVentesTable();
     });
 
-    document.getElementById("refresh-sales-btn").addEventListener("click", chargerVentes);
+    document.getElementById("calc-summary-btn").addEventListener("click", () => {
+      if (!document.getElementById("summary-date").value) {
+        document.getElementById("summary-date").value = toLocalDateStr(new Date());
+      }
+      viewAllDays = false;
+      showTotalsInFooter = true;
+      refreshFieldStyles();
+      renderVentesTable();
+      updateFooterSummary();
+    });
 
-    window.annulerVente = async function(venteId) {
-      const saisie = prompt("Confirmez avec le mot de passe Super Admin pour annuler cette vente :");
-      if (saisie === null) return;
-      const okPass = await verifyProductEditCode(saisie);
-      if (!okPass) {
-        alert("Mot de passe Super Admin incorrect.");
+    document.getElementById("summary-date").addEventListener("change", () => {
+      viewAllDays = false;
+      showTotalsInFooter = true;
+      renderVentesTable();
+      updateFooterSummary();
+    });
+
+    document.getElementById("filter-today-btn").addEventListener("click", () => {
+      document.getElementById("summary-date").value = toLocalDateStr(new Date());
+      viewAllDays = false;
+      showTotalsInFooter = true;
+      refreshFieldStyles();
+      renderVentesTable();
+      updateFooterSummary();
+    });
+
+    document.getElementById("filter-yesterday-btn").addEventListener("click", () => {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      document.getElementById("summary-date").value = toLocalDateStr(d);
+      viewAllDays = false;
+      showTotalsInFooter = true;
+      refreshFieldStyles();
+      renderVentesTable();
+      updateFooterSummary();
+    });
+
+    document.getElementById("filter-all-btn").addEventListener("click", () => {
+      viewAllDays = true;
+      refreshFieldStyles();
+      renderVentesTable();
+      updateFooterSummary();
+    });
+
+    function renderVentesTable() {
+      const salesBody = document.getElementById("sales-body");
+      const colsCount = currentRole === "super_admin" ? 7 : 5;
+      const filtered = getTableVentes();
+
+      if (!filtered.length) {
+        salesBody.innerHTML = `<tr><td colspan="${colsCount}">Aucune vente enregistrée pour ce critère.</td></tr>`;
         return;
       }
-      const vente = ventesCache.find(v => String(v.id) === String(venteId));
-      if (!vente) return;
 
-      const { error: delErr } = await sb.from("ventes").delete().eq("id", venteId);
-      if (delErr) {
-        alert("Erreur annulation vente : " + delErr.message);
-        return;
+      const byDay = new Map();
+      for (const v of filtered) {
+        const dtObj = new Date(v.created_at);
+        const dayKey = toLocalDateStr(dtObj);
+        if (!byDay.has(dayKey)) byDay.set(dayKey, []);
+        byDay.get(dayKey).push(v);
       }
 
-      if (vente.produit_id) {
-        const prod = produitsCache.find(p => String(p.id) === String(vente.produit_id));
-        if (prod) {
-          const stockRestaure = Number(prod.quantite) + Number(vente.quantite_vendue);
-          await sb.from("produits").update({ quantite: stockRestaure }).eq("id", vente.produit_id);
+      let html = "";
+      let receiptCounter = 0;
+
+      for (const [dayKey, daySales] of byDay.entries()) {
+        html += `<tr class="group-row"><td colspan="${colsCount}">Jour : ${escapeHtml(dayKey)}</td></tr>`;
+
+        const byReceiptTime = new Map();
+        for (const v of daySales) {
+          const dtObj = new Date(v.created_at);
+          const minuteKey = dtObj.toLocaleString("fr-FR", {
+            day: "2-digit", month: "2-digit", year: "numeric",
+            hour: "2-digit", minute: "2-digit"
+          });
+          if (!byReceiptTime.has(minuteKey)) byReceiptTime.set(minuteKey, []);
+          byReceiptTime.get(minuteKey).push(v);
+        }
+
+        for (const [minuteKey, items] of byReceiptTime.entries()) {
+          receiptCounter += 1;
+          const clientPhone = items[0]?.telephone_client ? ` — Tél : ${escapeHtml(items[0].telephone_client)}` : "";
+          html += `<tr class="receipt-row"><td colspan="${colsCount}">Reçu #${receiptCounter} — ${escapeHtml(minuteKey)}${clientPhone}</td></tr>`;
+
+          for (const v of items) {
+            const heurePrecise = new Date(v.created_at).toLocaleString("fr-FR", {
+              day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"
+            });
+            html += `
+              <tr>
+                <td>${heurePrecise}</td>
+                <td>${v.telephone_client ? escapeHtml(v.telephone_client) : "-"}</td>
+                <td><strong>${escapeHtml(v.nom_produit)}</strong></td>
+                <td>${v.quantite_vendue}</td>
+                ${currentRole === "super_admin" ? `<td>${Number(v.prix_initial ?? 0).toFixed(2)}</td>` : ""}
+                <td>${Number(v.prix_vente).toFixed(2)}</td>
+                ${currentRole === "super_admin" ? `<td class="right"><div class="row-actions"><button class="danger" type="button" onclick="supprimerVente(${v.id})">Supprimer</button></div></td>` : ""}
+              </tr>
+            `;
+          }
         }
       }
 
+      salesBody.innerHTML = html;
+    }
+
+    async function chargerVentes() {
+      const salesBody = document.getElementById("sales-body");
+      const colsCount = currentRole === "super_admin" ? 7 : 5;
+      const { data, error } = await sb
+        .from("ventes")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (error) {
+        salesBody.innerHTML = `<tr><td colspan="${colsCount}">Erreur : ${escapeHtml(error.message)}</td></tr>`;
+        return;
+      }
+      ventesCache = data || [];
+      renderVentesTable();
+      updateFooterSummary();
+    }
+
+    document.getElementById("refresh-sales-btn").addEventListener("click", chargerVentes);
+
+    document.getElementById("product-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("prod-status");
+
+      const nom = document.getElementById("prod-name").value.trim();
+      const qtyRaw = document.getElementById("prod-qty").value.trim();
+      const initPriceRaw = document.getElementById("prod-init-price").value.trim();
+      const alertRaw = document.getElementById("prod-alert").value.trim();
+      const adminPass = document.getElementById("prod-admin-pass").value;
+
+      if (!nom || qtyRaw === "" || initPriceRaw === "" || alertRaw === "") {
+        setStatus(statusEl, "Veuillez renseigner tous les champs du produit.", true);
+        return;
+      }
+      if (adminPass !== SUPER_ADMIN_CONFIRM_PASSWORD) {
+        setStatus(statusEl, "Mot de passe Super Admin incorrect. Ajout refusé.", true);
+        return;
+      }
+
+      const quantite = Number(qtyRaw);
+      const prixInitial = Number(initPriceRaw);
+      const seuilAlerte = Number(alertRaw);
+
+      const { error } = await sb.from("produits").insert([{
+        nom,
+        quantite,
+        prix_initial: prixInitial,
+        prix: prixInitial,
+        seuil_alerte: seuilAlerte
+      }]);
+
+      if (error) {
+        setStatus(statusEl, "Erreur ajout produit : " + error.message, true);
+        return;
+      }
+      document.getElementById("product-form").reset();
+      refreshFieldStyles();
+      setStatus(statusEl, "Produit ajouté au catalogue.");
       await chargerProduits();
+    });
+
+    window.majSeuil = async (id) => {
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("stock-table-status");
+      const val = Number(document.getElementById(`seuil-input-${id}`).value);
+      if (Number.isNaN(val) || val < 0) return;
+      const { error } = await sb.from("produits").update({ seuil_alerte: val }).eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur mise à jour seuil : " + error.message, true);
+        return;
+      }
+      setStatus(statusEl, "Seuil d'alerte mis à jour.");
+      await chargerProduits();
+    };
+
+    window.ajouterArrivage = async (id) => {
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("stock-table-status");
+      const inputEl = document.getElementById(`arrivage-input-${id}`);
+      const ajout = Number(inputEl.value.trim());
+      if (!Number.isInteger(ajout) || ajout <= 0) {
+        setStatus(statusEl, "Saisissez une quantité d'arrivage supérieure à 0.", true);
+        return;
+      }
+      const produit = produitsCache.find(p => Number(p.id) === Number(id));
+      if (!produit) return;
+
+      const nouvelleQte = Number(produit.quantite) + ajout;
+      const { error } = await sb.from("produits").update({ quantite: nouvelleQte }).eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur arrivage : " + error.message, true);
+        return;
+      }
+      inputEl.value = "";
+      refreshFieldStyles();
+      setStatus(statusEl, `Arrivage de +${ajout} ajouté à ${produit.nom}.`);
+      await chargerProduits();
+    };
+
+    window.ajustStock = async (id, nouvelleQte) => {
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("stock-table-status");
+      if (nouvelleQte < 0) {
+        setStatus(statusEl, "Le stock ne peut pas être négatif.", true);
+        return;
+      }
+      const { error } = await sb.from("produits").update({ quantite: nouvelleQte }).eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur mise à jour stock : " + error.message, true);
+        return;
+      }
+      await chargerProduits();
+    };
+
+    window.supprimerProduit = async (id) => {
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("stock-table-status");
+      const { error } = await sb.from("produits").delete().eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur suppression produit : " + error.message, true);
+        return;
+      }
+      await chargerProduits();
+    };
+
+    window.supprimerVente = async (id) => {
+      if (currentRole !== "super_admin") return;
+      const { error } = await sb.from("ventes").delete().eq("id", id);
+      if (error) {
+        setStatus(document.getElementById("sale-status"), "Erreur suppression vente : " + error.message, true);
+        return;
+      }
       await chargerVentes();
     };
 
