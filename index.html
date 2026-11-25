@@ -538,7 +538,7 @@
   <script>
     const SUPABASE_URL = "https://hhqdulyklgmnxuoehfql.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_HFyz52SLbwEPIyoPtkxECQ_oMf6Ydgc";
-    const PRODUCT_EDIT_DIGEST = "7b5a198e75f9f607d44da621c51c27a37e584203197f5b28801cd4e82f351853";
+    const PRODUCT_EDIT_DIGEST = "56ef4200766f05568cc5d5642a70525066e9584a125a1bbcefafe25c6c8a50b8";
     const RECEIPT_TIMEOUT_MS = 2 * 60 * 1000;
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -581,7 +581,7 @@
 
     async function verifyProductEditCode(inputVal) {
       if (!inputVal) return false;
-      const digest = await sha256Hex(inputVal);
+      const digest = await sha256Hex(inputVal.trim());
       return digest === PRODUCT_EDIT_DIGEST;
     }
 
