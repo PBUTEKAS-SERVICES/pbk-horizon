@@ -3,773 +3,1449 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PBK Horizon — Ventes & Stock</title>
+  <title>PBK Horizon</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg: #f4f6f9;
       --card: #ffffff;
-      --primary: #0f172a;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --whatsapp: #16a34a;
-      --danger: #dc2626;
-      --border: #e2e8f0;
-      --text: #0f172a;
-      --muted: #64748b;
+      --text: #18202c;
+      --muted: #5c687a;
+      --default-hint: #8a96a8;
+      --primary: #0f4c81;
+      --primary-hover: #0a365c;
+      --danger: #c62828;
+      --danger-bg: #fdecea;
+      --ok: #1e7e34;
+      --ok-bg: #eaf6ed;
+      --whatsapp: #128c7e;
+      --whatsapp-hover: #075e54;
+      --border: #dfe4ec;
     }
-
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.45;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
       padding: 16px;
     }
-
+    .container { max-width: 1080px; margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    h1 { margin: 0; font-size: 1.5rem; color: var(--primary); }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 18px;
+      padding: 16px;
       margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
-
-    .topbar {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
+    .alert-banner {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid #f5c2c0;
+      border-radius: 10px;
+      padding: 12px 14px;
       margin-bottom: 16px;
-    }
-
-    .brand h1 {
-      margin: 0;
-      font-size: 1.35rem;
-    }
-
-    .brand small {
-      color: var(--muted);
-    }
-
-    .row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    label {
-      display: block;
+      font-size: 0.92rem;
       font-weight: 600;
-      margin-bottom: 6px;
     }
-
-    .field-title-lg {
-      font-size: 1.05rem;
+    h2 { margin: 0 0 12px; font-size: 1.1rem; color: var(--primary); }
+    .sale-section-title {
+      margin: 0 0 14px;
+      font-size: 1.35rem;
+      font-weight: 800;
       color: var(--primary);
     }
-
-    input, select, button {
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
+    .sale-field-label {
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text);
+      line-height: 1.25;
+    }
+    input, select {
       width: 100%;
       padding: 10px 12px;
+      border: 1.5px solid var(--primary);
       border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      font-size: 0.98rem;
-      font-family: inherit;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--text);
+      font-style: normal;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
-
     input:focus, select:focus {
-      outline: 2px solid var(--accent);
-      border-color: var(--accent);
+      border-color: var(--primary-hover);
+      box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.16);
     }
-
-    .password-wrap {
+    input::placeholder {
+      color: var(--default-hint);
+      font-style: italic;
+    }
+    input.is-empty,
+    select.is-empty {
+      color: var(--default-hint);
+      font-style: italic;
+    }
+    .secret-wrap {
       position: relative;
       display: flex;
       align-items: center;
     }
-
-    .password-wrap input {
-      padding-right: 44px;
+    .secret-wrap input {
+      padding-right: 42px;
     }
-
     .eye-btn {
       position: absolute;
       right: 6px;
-      width: auto;
-      padding: 4px 8px;
       background: transparent;
+      color: var(--primary);
       border: none;
+      padding: 4px 6px;
+      font-size: 1rem;
+      line-height: 1;
       cursor: pointer;
-      font-size: 1.05rem;
+      border-radius: 6px;
     }
-
-    button {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
+    .eye-btn:hover {
+      background: #eef2f7;
     }
-
-    button:hover {
-      background: var(--accent-hover);
-    }
-
-    button.secondary {
-      background: #475569;
-    }
-
-    button.whatsapp {
-      background: var(--whatsapp);
-    }
-
-    button.danger {
-      background: var(--danger);
-    }
-
-    button.small {
-      width: auto;
-      padding: 6px 10px;
+    .small-input {
+      width: 78px;
+      padding: 6px 8px;
       font-size: 0.88rem;
+      display: inline-block;
     }
-
-    .tabs {
+    .action-row {
+      margin-top: 12px;
       display: flex;
-      gap: 8px;
-      margin-bottom: 14px;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
       flex-wrap: wrap;
     }
-
-    .tabs button {
-      width: auto;
-      background: #e2e8f0;
-      color: var(--text);
+    .row-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
     }
-
-    .tabs button.active {
+    .tabs {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .tab-btn.active {
       background: var(--primary);
       color: #fff;
     }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
     }
-
-    th, td {
-      border-bottom: 1px solid var(--border);
-      padding: 10px 8px;
-      text-align: left;
-      font-size: 0.94rem;
-    }
-
-    tfoot td {
+    button:hover { background: var(--primary-hover); }
+    button.secondary { background: #eef2f7; color: var(--text); padding: 6px 10px; font-size: 0.85rem; }
+    button.danger { background: var(--danger-bg); color: var(--danger); padding: 6px 10px; font-size: 0.85rem; }
+    button.whatsapp { background: var(--whatsapp); color: #fff; }
+    button.whatsapp:hover { background: var(--whatsapp-hover); }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
       font-weight: 700;
-      background: #f8fafc;
+      background: #e6eef8;
+      color: var(--primary);
     }
-
-    .cart-box {
-      border: 1px dashed #94a3b8;
-      border-radius: 10px;
-      padding: 12px;
-      margin: 12px 0;
-      background: #f8fafc;
+    .status { margin-top: 10px; font-size: 0.9rem; font-weight: 600; text-align: right; }
+    .status.err { color: var(--danger); }
+    .status.ok { color: var(--ok); }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th.right, td.right { text-align: right; }
+    th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
+    tfoot td {
+      background: #f4f6f9;
+      font-weight: 700;
+      border-top: 2px solid var(--border);
     }
-
-    .receipt-box {
-      border: 1px solid #bbf7d0;
-      background: #f0fdf4;
+    .day-totals-split {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      width: 100%;
+    }
+    .day-metric-box {
+      background: #ffffff;
+      border: 1.5px solid var(--primary);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .day-metric-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .day-metric-value {
+      font-size: 1rem;
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .day-metric-value.gain {
+      color: var(--ok);
+    }
+    .receipt-preview-box {
+      margin-top: 14px;
+      border: 1.5px solid var(--primary);
       border-radius: 10px;
       padding: 14px;
-      margin-top: 14px;
+      background: #f9fbfd;
     }
-
-    .hidden {
-      display: none !important;
+    .receipt-logo-header {
+      text-align: left;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--primary);
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 6px;
     }
-
-    .inline-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
+    .receipt-body-text {
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.86rem;
+      color: var(--text);
+      margin: 0;
     }
-
-    .inline-actions > * {
-      width: auto;
+    .hidden { display: none !important; }
+    .pill-low { background: var(--danger-bg); color: var(--danger); padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+    .pill-ok { background: var(--ok-bg); color: var(--ok); padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+    .group-row td {
+      background: #eef2f7;
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 0.86rem;
     }
-
-    .status-msg {
-      margin-top: 8px;
-      font-size: 0.92rem;
+    .receipt-row td {
+      background: #f9fafc;
       font-weight: 600;
+      color: var(--muted);
+      font-size: 0.82rem;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="topbar">
-      <div class="brand">
+    <header>
+      <div>
         <h1>PBK Horizon</h1>
-        <small>Gestion des ventes & du stock</small>
       </div>
-      <div id="sessionBar" class="inline-actions hidden">
-        <span id="userBadge"></span>
-        <button id="lockBtn" class="secondary small" type="button">Verrouiller</button>
+      <div id="user-bar" class="hidden" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span id="user-email-label" style="font-size:0.85rem; color:var(--muted);"></span>
+        <span id="user-role-badge" class="badge"></span>
+        <button id="logout-btn" class="secondary" type="button">Déconnexion</button>
       </div>
-    </div>
+    </header>
+
+    <div id="role-warning" class="alert-banner hidden"></div>
+    <div id="low-stock-banner" class="alert-banner hidden"></div>
 
     <!-- ÉCRAN DE CONNEXION -->
-    <div id="authSection" class="card">
+    <section id="login-section" class="card" style="max-width: 420px; margin: 40px auto;">
       <h2>Connexion</h2>
-      <form id="loginForm">
-        <div class="row">
-          <div>
-            <label for="loginEmail">Adresse e-mail</label>
-            <input id="loginEmail" type="email" autocomplete="username" required />
-          </div>
-          <div>
-            <label for="loginPassword">Mot de passe</label>
-            <div class="password-wrap">
-              <input id="loginPassword" type="password" autocomplete="current-password" required />
-              <button class="eye-btn" type="button" data-toggle-target="loginPassword" aria-label="Afficher ou masquer">👁️</button>
-            </div>
+      <form id="login-form">
+        <div style="margin-bottom: 12px;">
+          <label for="login-email">Identifiant (adresse e-mail)</label>
+          <div class="secret-wrap">
+            <input id="login-email" type="password" required autocomplete="username" placeholder="Saisir l'identifiant" />
+            <button type="button" class="eye-btn" data-toggle-target="login-email" aria-label="Afficher ou masquer l'identifiant">👁️</button>
           </div>
         </div>
-        <button type="submit">Se connecter</button>
-        <div id="authMessage" class="status-msg"></div>
+        <div style="margin-bottom: 14px;">
+          <label for="login-password">Mot de passe</label>
+          <div class="secret-wrap">
+            <input id="login-password" type="password" required autocomplete="current-password" placeholder="Saisir le mot de passe" />
+            <button type="button" class="eye-btn" data-toggle-target="login-password" aria-label="Afficher ou masquer le mot de passe">👁️</button>
+          </div>
+        </div>
+        <div class="action-row">
+          <button type="submit" style="width: 100%;">Se connecter</button>
+        </div>
+        <div id="login-status" class="status"></div>
       </form>
-    </div>
+    </section>
 
-    <!-- APPLICATION PRINCIPALE -->
-    <div id="appSection" class="hidden">
-      <div class="tabs">
-        <button id="tabSaleBtn" class="active" type="button">Nouvelle vente</button>
-        <button id="tabSalesListBtn" type="button">Ventes enregistrées</button>
-        <button id="tabStockBtn" type="button">Stock & Produits</button>
-      </div>
+    <!-- ESPACE CONNECTÉ -->
+    <main id="app-section" class="hidden">
 
-      <!-- ONGLET 1 : NOUVELLE VENTE -->
-      <div id="saleTab" class="card">
-        <h2>Nouvelle vente</h2>
-        <div class="row">
-          <div>
-            <label for="clientPhone" class="field-title-lg">Téléphone</label>
-            <input id="clientPhone" type="tel" maxlength="10" placeholder="Ex. 0812345678" />
+      <!-- NAVIGATION UTILISATEUR CLASSIQUE -->
+      <nav id="user-page-nav" class="tabs hidden">
+        <button id="user-tab-vente-btn" class="secondary tab-btn active" type="button">Vente</button>
+        <button id="user-tab-ventes-btn" class="secondary tab-btn" type="button">Ventes enregistrées</button>
+        <button id="user-tab-seuils-btn" class="secondary tab-btn" type="button">Seuils d'alerte</button>
+      </nav>
+
+      <!-- NAVIGATION PAR PAGE POUR LE SUPER ADMIN (CHAQUE PAGE STRICTEMENT SÉPARÉE) -->
+      <nav id="admin-page-nav" class="tabs hidden">
+        <button id="admin-tab-vente-btn" class="secondary tab-btn active" type="button">Page Vente</button>
+        <button id="admin-tab-ventes-btn" class="secondary tab-btn" type="button">Ventes enregistrées</button>
+        <button id="admin-tab-ajout-btn" class="secondary tab-btn" type="button">Ajout produit</button>
+        <button id="admin-tab-catalogue-btn" class="secondary tab-btn" type="button">Catalogue & Stock</button>
+      </nav>
+
+      <!-- PAGE 1 : VENTE -->
+      <div id="page-vente-form" class="hidden">
+        <section class="card">
+          <h2 class="sale-section-title">🛍️</h2>
+          <form id="cart-add-form">
+            <div class="grid">
+              <div>
+                <label class="sale-field-label" for="sale-product">Produit</label>
+                <select id="sale-product" class="is-empty">
+                  <option value="">Sélectionner un produit</option>
+                </select>
+              </div>
+              <div>
+                <label class="sale-field-label" for="sale-qty">Quantité vendue</label>
+                <input id="sale-qty" type="number" min="1" step="1" placeholder="Saisir la quantité" />
+              </div>
+              <div>
+                <label class="sale-field-label" for="sale-price">Prix de vente unitaire</label>
+                <input id="sale-price" type="number" min="0" step="0.01" placeholder="Saisir le prix" />
+              </div>
+              <div>
+                <label class="sale-field-label" for="sale-client-phone">Téléphone</label>
+                <input id="sale-client-phone" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" placeholder="Ex: 0991234567" />
+              </div>
+            </div>
+            <div class="action-row">
+              <button id="add-to-cart-btn" class="secondary" type="submit">Ajouter au panier</button>
+            </div>
+            <div id="cart-status" class="status"></div>
+          </form>
+
+          <div style="overflow-x:auto; margin-top: 12px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Qté</th>
+                  <th>Prix vente</th>
+                  <th class="right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="cart-body">
+                <tr><td colspan="4">Aucun produit ajouté à la vente.</td></tr>
+              </tbody>
+            </table>
           </div>
-          <div>
-            <label for="productSelect" class="field-title-lg">Produit</label>
-            <select id="productSelect"></select>
+
+          <div class="action-row">
+            <span id="sale-preview" style="font-size:0.92rem; font-weight:600;"></span>
+            <button id="validate-sale-btn" type="button">Valider la vente</button>
           </div>
-          <div>
-            <label for="qtyInput" class="field-title-lg">Quantité</label>
-            <input id="qtyInput" type="number" min="1" value="1" />
-          </div>
-        </div>
+          <div id="sale-status" class="status"></div>
 
-        <div class="inline-actions">
-          <button id="addToCartBtn" type="button">Ajouter au panier</button>
-        </div>
-
-        <div class="cart-box">
-          <strong>Panier</strong>
-          <table>
-            <thead>
-              <tr>
-                <th>Produit</th>
-                <th>Qté</th>
-                <th>Prix unit.</th>
-                <th>Sous-total</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="cartBody"></tbody>
-          </table>
-          <div id="cartTotalLine" style="margin-top: 10px; font-weight: 700;">Total : 0</div>
-        </div>
-
-        <button id="submitSaleBtn" type="button">Enregistrer la vente</button>
-        <div id="saleMessage" class="status-msg"></div>
-
-        <!-- REÇU WHATSAPP (MASQUÉ APRÈS ENVOI OU APRÈS 2 MINUTES) -->
-        <div id="receiptBox" class="receipt-box hidden">
-          <strong>PBK Horizon — Reçu de vente</strong>
-          <pre id="receiptPreview" style="white-space: pre-wrap; margin: 8px 0; font-family: inherit;"></pre>
-          <div class="inline-actions">
-            <button id="sendWhatsappBtn" class="whatsapp" type="button">Envoyer sur WhatsApp</button>
-            <button id="hideReceiptBtn" class="secondary small" type="button">Masquer</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ONGLET 2 : VENTES ENREGISTRÉES -->
-      <div id="salesListTab" class="card hidden">
-        <h2>Ventes enregistrées</h2>
-        <div class="row">
-          <div>
-            <label for="searchPhoneInput">Recherche par numéro (10 chiffres)</label>
-            <input id="searchPhoneInput" type="tel" maxlength="10" placeholder="Rechercher un numéro à 10 chiffres" />
-          </div>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Téléphone</th>
-              <th>Articles</th>
-              <th>Montant</th>
-            </tr>
-          </thead>
-          <tbody id="salesTableBody"></tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3">Total ventes du jour</td>
-              <td id="dailySalesTotal">0</td>
-            </tr>
-            <tr>
-              <td colspan="3">Nombre de ventes du jour</td>
-              <td id="dailySalesCount">0</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      <!-- ONGLET 3 : STOCK & PRODUITS -->
-      <div id="stockTab" class="card hidden">
-        <h2>Stock & Produits</h2>
-        <div class="row" style="max-width: 420px;">
-          <div>
-            <label for="editCodeInput">Code de modification produit</label>
-            <div class="password-wrap">
-              <input id="editCodeInput" type="password" placeholder="Saisir le code" />
-              <button class="eye-btn" type="button" data-toggle-target="editCodeInput" aria-label="Afficher ou masquer">👁️</button>
+          <!-- APERÇU DU REÇU & ENVOI WHATSAPP APRÈS VALIDATION -->
+          <div id="last-receipt-box" class="receipt-preview-box hidden">
+            <div class="receipt-logo-header">PBK Horizon</div>
+            <pre id="last-receipt-text" class="receipt-body-text"></pre>
+            <div class="action-row">
+              <button id="send-whatsapp-btn" class="whatsapp" type="button">Envoyer le reçu par WhatsApp</button>
+              <button id="copy-receipt-btn" class="secondary" type="button">Copier le reçu</button>
             </div>
           </div>
-        </div>
-        <button id="unlockEditBtn" class="small" type="button">Débloquer la modification</button>
-        <div id="editAuthMessage" class="status-msg"></div>
+        </section>
+      </div>
 
-        <div id="productEditorForm" class="hidden" style="margin-top: 14px;">
-          <h3>Ajouter / Modifier un produit</h3>
-          <div class="row">
-            <div>
-              <label for="prodNameInput">Nom du produit</label>
-              <input id="prodNameInput" type="text" />
-            </div>
-            <div>
-              <label for="prodPriceInput">Prix unitaire</label>
-              <input id="prodPriceInput" type="number" min="0" step="0.01" />
-            </div>
-            <div>
-              <label for="prodStockInput">Stock disponible</label>
-              <input id="prodStockInput" type="number" min="0" />
+      <!-- PAGE 2 : VENTES ENREGISTRÉES -->
+      <div id="page-ventes-list" class="hidden">
+        <section class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <h2 style="margin:0;">Ventes enregistrées 💰💰</h2>
+            <div class="row-actions">
+              <input id="search-phone-input" type="tel" inputmode="numeric" maxlength="10" placeholder="Rechercher par téléphone" style="width:210px; padding:6px 10px; font-size:0.85rem;" />
+              <button id="clear-phone-search-btn" class="secondary" type="button">Effacer tél.</button>
+              <button id="filter-today-btn" class="secondary" type="button">Aujourd'hui</button>
+              <button id="filter-yesterday-btn" class="secondary" type="button">Hier</button>
+              <button id="filter-all-btn" class="secondary" type="button">Tous les jours</button>
+              <input id="summary-date" type="date" style="width:auto; padding:6px 10px; font-size:0.85rem;" />
+              <button id="calc-summary-btn" class="secondary" type="button">Somme ventes & gains</button>
+              <button id="refresh-sales-btn" class="secondary" type="button">Actualiser</button>
             </div>
           </div>
-          <button id="saveProductBtn" type="button">Enregistrer le produit</button>
-          <div id="productSaveMessage" class="status-msg"></div>
-        </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Produit</th>
-              <th>Prix</th>
-              <th>Stock</th>
-            </tr>
-          </thead>
-          <tbody id="productsTableBody"></tbody>
-        </table>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date & Heure / Reçu</th>
+                  <th>Téléphone</th>
+                  <th>Produit</th>
+                  <th>Qté</th>
+                  <th class="admin-only hidden">Prix initial</th>
+                  <th>Prix vente</th>
+                  <th class="admin-only hidden right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="sales-body">
+                <tr><td colspan="7">Chargement...</td></tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="7">
+                    <div class="day-totals-split">
+                      <div class="day-metric-box">
+                        <span class="day-metric-label">Date pointée</span>
+                        <span id="footer-date" class="day-metric-value">Date : -</span>
+                      </div>
+                      <div class="day-metric-box">
+                        <span class="day-metric-label">Somme totale de la journée</span>
+                        <span id="footer-total-sold" class="day-metric-value">Total vendu de la journée : 0.00</span>
+                      </div>
+                      <div class="day-metric-box">
+                        <span class="day-metric-label">Somme totale des gains de la journée</span>
+                        <span id="footer-total-gain" class="day-metric-value gain">Total gains de la journée : 0.00</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
       </div>
-    </div>
+
+      <!-- PAGE 3 (UTILISATEUR) : SEUILS D'ALERTE -->
+      <div id="page-user-thresholds" class="hidden">
+        <section class="card">
+          <h2>⚠️🔥</h2>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Stock dispo</th>
+                  <th>Seuil d'alerte</th>
+                  <th>État</th>
+                </tr>
+              </thead>
+              <tbody id="user-thresholds-body">
+                <tr><td colspan="4">Chargement...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- PAGE 3 (SUPER ADMIN) : AJOUT PRODUIT -->
+      <div id="page-admin-ajout" class="hidden">
+        <section class="card">
+          <h2>🛍️</h2>
+          <form id="product-form">
+            <div class="grid">
+              <div>
+                <label for="prod-name">Nom du produit</label>
+                <input id="prod-name" type="text" required placeholder="Saisir le nom du produit" />
+              </div>
+              <div>
+                <label for="prod-qty">Quantité initiale</label>
+                <input id="prod-qty" type="number" min="0" step="1" required placeholder="Saisir la quantité" />
+              </div>
+              <div>
+                <label for="prod-init-price">Prix initial</label>
+                <input id="prod-init-price" type="number" min="0" step="0.01" required placeholder="Saisir le prix initial" />
+              </div>
+              <div>
+                <label for="prod-alert">Seuil d'alerte</label>
+                <input id="prod-alert" type="number" min="0" step="1" required placeholder="Saisir le seuil d'alerte" />
+              </div>
+              <div>
+                <label for="prod-admin-pass">Mot de passe Super Admin</label>
+                <div class="secret-wrap">
+                  <input id="prod-admin-pass" type="password" required placeholder="Saisir le mot de passe" />
+                  <button type="button" class="eye-btn" data-toggle-target="prod-admin-pass" aria-label="Afficher ou masquer le mot de passe Super Admin">👁️</button>
+                </div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button type="submit">Valider l'ajout</button>
+            </div>
+            <div id="prod-status" class="status"></div>
+          </form>
+        </section>
+      </div>
+
+      <!-- PAGE 4 (SUPER ADMIN) : CATALOGUE & STOCK -->
+      <div id="page-admin-catalogue" class="hidden">
+        <section class="card">
+          <h2>⚠️🔥</h2>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Stock</th>
+                  <th class="right">Seuil d'alerte</th>
+                  <th>Prix initial</th>
+                  <th>État</th>
+                  <th class="right">Arrivage & actions</th>
+                </tr>
+              </thead>
+              <tbody id="stock-body">
+                <tr><td colspan="6">Chargement...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="stock-table-status" class="status"></div>
+        </section>
+      </div>
+
+    </main>
   </div>
 
   <script>
-    // Conservez votre configuration Supabase existante
-    const SUPABASE_URL = window.PBK_SUPABASE_URL || "https://VOTRE-PROJET.supabase.co";
-    const SUPABASE_ANON_KEY = window.PBK_SUPABASE_ANON_KEY || "VOTRE-CLE-ANON-PUBLIQUE";
+    const SUPABASE_URL = "https://hhqdulyklgmnxuoehfql.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_HFyz52SLbwEPIyoPtkxECQ_oMf6Ydgc";
+    const SUPER_ADMIN_CONFIRM_PASSWORD = "Bu@@293304 PBK";
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Empreinte SHA-256 de PBK-293304 (aucun mot de passe en clair dans le code)
-    const PRODUCT_EDIT_DIGEST = "e5b8b7f5d2041f648e91c43564b34b04e3b8d9a841d58c860b67e6d68649d460";
-    const RECEIPT_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
-
     let currentUser = null;
-    let productsCache = [];
-    let cart = [];
-    let editUnlocked = false;
-    let receiptTimerId = null;
-    let currentReceiptPhone = "";
-    let currentReceiptText = "";
+    let currentRole = "utilisateur";
+    let produitsCache = [];
+    let ventesCache = [];
+    let cartItems = [];
+    let lastReceiptData = null;
+    let adminActivePage = "vente";
+    let adminPagesUnlocked = false;
+    let userActiveTab = "vente";
+    let showTotalsInFooter = true;
+    let viewAllDays = false;
 
-    const authSection = document.getElementById("authSection");
-    const appSection = document.getElementById("appSection");
-    const sessionBar = document.getElementById("sessionBar");
-    const userBadge = document.getElementById("userBadge");
-    const receiptBox = document.getElementById("receiptBox");
-    const receiptPreview = document.getElementById("receiptPreview");
+    const loginSection = document.getElementById("login-section");
+    const appSection = document.getElementById("app-section");
+    const userBar = document.getElementById("user-bar");
+    const roleBadge = document.getElementById("user-role-badge");
+    const userEmailLabel = document.getElementById("user-email-label");
+    const userPageNav = document.getElementById("user-page-nav");
+    const adminPageNav = document.getElementById("admin-page-nav");
+    const pageVenteForm = document.getElementById("page-vente-form");
+    const pageVentesList = document.getElementById("page-ventes-list");
+    const pageUserThresholds = document.getElementById("page-user-thresholds");
+    const pageAdminAjout = document.getElementById("page-admin-ajout");
+    const pageAdminCatalogue = document.getElementById("page-admin-catalogue");
+    const roleWarning = document.getElementById("role-warning");
+    const lowStockBanner = document.getElementById("low-stock-banner");
 
-    async function sha256Hex(value) {
-      const data = new TextEncoder().encode(value);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-      return Array.from(new Uint8Array(hashBuffer))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
+    function toLocalDateStr(dateObj) {
+      return [
+        dateObj.getFullYear(),
+        String(dateObj.getMonth() + 1).padStart(2, "0"),
+        String(dateObj.getDate()).padStart(2, "0")
+      ].join("-");
     }
 
-    // Boutons œil 👁️ / 🙈
-    document.querySelectorAll(".eye-btn[data-toggle-target]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const input = document.getElementById(btn.dataset.toggleTarget);
-        if (!input) return;
-        const isPass = input.type === "password";
-        input.type = isPass ? "text" : "password";
-        btn.textContent = isPass ? "🙈" : "👁️";
+    document.getElementById("summary-date").value = toLocalDateStr(new Date());
+
+    ["sale-client-phone", "search-phone-input"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", () => {
+        el.value = el.value.replace(/\D/g, "").slice(0, 10);
+        refreshFieldStyles();
+        if (id === "search-phone-input") {
+          renderVentesTable();
+        }
       });
     });
 
-    function clearReceiptDisplay() {
-      if (receiptTimerId) {
-        clearTimeout(receiptTimerId);
-        receiptTimerId = null;
+    document.querySelectorAll(".eye-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.getAttribute("data-toggle-target");
+        const inputEl = document.getElementById(targetId);
+        if (!inputEl) return;
+        const isHidden = inputEl.type === "password";
+        inputEl.type = isHidden ? "text" : "password";
+        btn.textContent = isHidden ? "🙈" : "👁️";
+      });
+    });
+
+    function refreshFieldStyles() {
+      document.querySelectorAll("input").forEach(inp => {
+        inp.classList.toggle("is-empty", inp.value.trim() === "");
+      });
+      document.querySelectorAll("select").forEach(sel => {
+        sel.classList.toggle("is-empty", sel.value === "");
+      });
+    }
+
+    function clearDefaultIfNeeded(inp) {
+      if (inp.type === "number" && inp.dataset.clearedOnce !== "true" && (inp.value === "0" || inp.value === "1")) {
+        inp.value = "";
       }
-      currentReceiptPhone = "";
-      currentReceiptText = "";
-      receiptPreview.textContent = "";
-      receiptBox.classList.add("hidden");
+      inp.dataset.clearedOnce = "true";
+      refreshFieldStyles();
     }
 
-    function showReceiptForTwoMinutes(phone, text) {
-      clearReceiptDisplay();
-      currentReceiptPhone = phone;
-      currentReceiptText = text;
-      receiptPreview.textContent = text;
-      receiptBox.classList.remove("hidden");
-
-      // Disparaît automatiquement après 2 minutes même sans envoi
-      receiptTimerId = setTimeout(() => {
-        clearReceiptDisplay();
-      }, RECEIPT_TIMEOUT_MS);
-    }
-
-    // Exige le mot de passe immédiatement dès qu'on quitte l'onglet et revient se reconnecter
-    async function lockSessionImmediately() {
-      if (!currentUser && appSection.classList.contains("hidden")) return;
-      editUnlocked = false;
-      clearReceiptDisplay();
-      document.getElementById("productEditorForm").classList.add("hidden");
-      document.getElementById("loginPassword").value = "";
-      appSection.classList.add("hidden");
-      sessionBar.classList.add("hidden");
-      authSection.classList.remove("hidden");
-      try {
-        await sb.auth.signOut();
-      } catch (_) {}
-      currentUser = null;
-    }
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        lockSessionImmediately();
+    document.addEventListener("focusin", (e) => {
+      if (e.target && e.target.tagName === "INPUT") {
+        clearDefaultIfNeeded(e.target);
       }
     });
-
-    window.addEventListener("blur", () => {
-      lockSessionImmediately();
+    document.addEventListener("input", (e) => {
+      if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT")) {
+        e.target.dataset.clearedOnce = "true";
+        refreshFieldStyles();
+      }
+    });
+    document.addEventListener("change", (e) => {
+      if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT")) {
+        refreshFieldStyles();
+      }
     });
 
-    document.getElementById("lockBtn").addEventListener("click", () => {
-      lockSessionImmediately();
+    function setStatus(el, msg, isErr = false) {
+      el.textContent = msg;
+      el.className = "status " + (msg ? (isErr ? "err" : "ok") : "");
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "").replace(/[&<>"']/g, s => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[s]));
+    }
+
+    function formatWhatsAppNumber(tenDigits) {
+      if (!tenDigits || tenDigits.length !== 10) return "";
+      if (tenDigits.startsWith("0")) {
+        return "243" + tenDigits.slice(1);
+      }
+      return tenDigits;
+    }
+
+    function buildWhatsAppReceiptText(receipt) {
+      const lignes = receipt.items.map(item =>
+        `• ${item.nom} : ${item.qty} x ${item.prixVente.toFixed(2)} = ${(item.qty * item.prixVente).toFixed(2)}`
+      ).join("\n");
+
+      return [
+        "PBK Horizon",
+        "------------------------",
+        `Date : ${receipt.dateStr}`,
+        receipt.phone ? `Téléphone : ${receipt.phone}` : null,
+        "Articles :",
+        lignes,
+        "------------------------",
+        `TOTAL PAYÉ : ${receipt.total.toFixed(2)}`,
+        "",
+        "Merci d'être passé chez PBK Horizon!"
+      ].filter(Boolean).join("\n");
+    }
+
+    function applyNavigation() {
+      if (currentRole === "super_admin") {
+        userPageNav.classList.add("hidden");
+        adminPageNav.classList.remove("hidden");
+
+        const isProtected = adminActivePage === "ajout" || adminActivePage === "catalogue";
+        const activePage = isProtected && !adminPagesUnlocked ? "vente" : adminActivePage;
+
+        pageVenteForm.classList.toggle("hidden", activePage !== "vente");
+        pageVentesList.classList.toggle("hidden", activePage !== "ventes");
+        pageAdminAjout.classList.toggle("hidden", activePage !== "ajout");
+        pageAdminCatalogue.classList.toggle("hidden", activePage !== "catalogue");
+        pageUserThresholds.classList.add("hidden");
+
+        document.getElementById("admin-tab-vente-btn").classList.toggle("active", activePage === "vente");
+        document.getElementById("admin-tab-ventes-btn").classList.toggle("active", activePage === "ventes");
+        document.getElementById("admin-tab-ajout-btn").classList.toggle("active", activePage === "ajout");
+        document.getElementById("admin-tab-catalogue-btn").classList.toggle("active", activePage === "catalogue");
+      } else {
+        adminPageNav.classList.add("hidden");
+        userPageNav.classList.remove("hidden");
+        pageAdminAjout.classList.add("hidden");
+        pageAdminCatalogue.classList.add("hidden");
+
+        pageVenteForm.classList.toggle("hidden", userActiveTab !== "vente");
+        pageVentesList.classList.toggle("hidden", userActiveTab !== "ventes");
+        pageUserThresholds.classList.toggle("hidden", userActiveTab !== "seuils");
+
+        document.getElementById("user-tab-vente-btn").classList.toggle("active", userActiveTab === "vente");
+        document.getElementById("user-tab-ventes-btn").classList.toggle("active", userActiveTab === "ventes");
+        document.getElementById("user-tab-seuils-btn").classList.toggle("active", userActiveTab === "seuils");
+      }
+    }
+
+    document.getElementById("user-tab-vente-btn").addEventListener("click", () => {
+      userActiveTab = "vente";
+      applyNavigation();
+    });
+    document.getElementById("user-tab-ventes-btn").addEventListener("click", () => {
+      userActiveTab = "ventes";
+      applyNavigation();
+    });
+    document.getElementById("user-tab-seuils-btn").addEventListener("click", () => {
+      userActiveTab = "seuils";
+      applyNavigation();
     });
 
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("loginEmail").value.trim();
-      const password = document.getElementById("loginPassword").value;
-      const msg = document.getElementById("authMessage");
-      msg.textContent = "";
+    function switchAdminPage(targetPage) {
+      const needsPassword = targetPage === "ajout" || targetPage === "catalogue";
+      if (needsPassword && !adminPagesUnlocked) {
+        const saisie = prompt("Entrez le mot de passe Super Admin pour accéder à cette page :");
+        if (saisie === SUPER_ADMIN_CONFIRM_PASSWORD) {
+          adminPagesUnlocked = true;
+        } else {
+          if (saisie !== null) alert("Mot de passe incorrect.");
+          return;
+        }
+      }
+      adminActivePage = targetPage;
+      applyNavigation();
+    }
 
-      const { data, error } = await sb.auth.signInWithPassword({ email, password });
-      if (error || !data.user) {
-        msg.textContent = error ? error.message : "Connexion impossible.";
+    document.getElementById("admin-tab-vente-btn").addEventListener("click", () => switchAdminPage("vente"));
+    document.getElementById("admin-tab-ventes-btn").addEventListener("click", () => switchAdminPage("ventes"));
+    document.getElementById("admin-tab-ajout-btn").addEventListener("click", () => switchAdminPage("ajout"));
+    document.getElementById("admin-tab-catalogue-btn").addEventListener("click", () => switchAdminPage("catalogue"));
+
+    async function initSession() {
+      refreshFieldStyles();
+      roleWarning.classList.add("hidden");
+      lowStockBanner.classList.add("hidden");
+
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        loginSection.classList.remove("hidden");
+        appSection.classList.add("hidden");
+        userBar.classList.add("hidden");
         return;
       }
 
-      currentUser = data.user;
-      userBadge.textContent = currentUser.email || "";
-      authSection.classList.add("hidden");
+      currentUser = session.user;
+      userEmailLabel.textContent = currentUser.email || "";
+
+      const { data: profil, error: profilErr } = await sb
+        .from("profils")
+        .select("role")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+
+      currentRole = profil?.role === "super_admin" ? "super_admin" : "utilisateur";
+      if (currentRole !== "super_admin") {
+        adminPagesUnlocked = false;
+        adminActivePage = "vente";
+        roleWarning.classList.add("hidden");
+        lowStockBanner.classList.add("hidden");
+      } else if (profilErr) {
+        roleWarning.textContent = "Erreur lecture profils : " + profilErr.message;
+        roleWarning.classList.remove("hidden");
+      }
+
+      loginSection.classList.add("hidden");
       appSection.classList.remove("hidden");
-      sessionBar.classList.remove("hidden");
-      await loadProducts();
-      await loadSales();
-    });
+      userBar.classList.remove("hidden");
+      roleBadge.textContent = currentRole === "super_admin" ? "Super Admin" : "Utilisateur";
 
-    // Navigation entre onglets
-    const tabs = [
-      { btn: "tabSaleBtn", panel: "saleTab" },
-      { btn: "tabSalesListBtn", panel: "salesListTab" },
-      { btn: "tabStockBtn", panel: "stockTab" }
-    ];
-
-    tabs.forEach(({ btn, panel }) => {
-      document.getElementById(btn).addEventListener("click", () => {
-        tabs.forEach((t) => {
-          document.getElementById(t.btn).classList.remove("active");
-          document.getElementById(t.panel).classList.add("hidden");
-        });
-        document.getElementById(btn).classList.add("active");
-        document.getElementById(panel).classList.remove("hidden");
+      document.querySelectorAll(".admin-only").forEach(el => {
+        el.classList.toggle("hidden", currentRole !== "super_admin");
       });
-    });
+      applyNavigation();
 
-    async function loadProducts() {
-      const { data } = await sb.from("produits").select("*").order("nom", { ascending: true });
-      productsCache = data || [];
-      const select = document.getElementById("productSelect");
-      const tbody = document.getElementById("productsTableBody");
-      select.innerHTML = "";
-      tbody.innerHTML = "";
-
-      productsCache.forEach((p) => {
-        const opt = document.createElement("option");
-        opt.value = p.id;
-        opt.textContent = `${p.nom} (${p.prix}) — Stock: ${p.stock}`;
-        select.appendChild(opt);
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${p.nom}</td><td>${p.prix}</td><td>${p.stock}</td>`;
-        tbody.appendChild(tr);
-      });
+      await chargerProduits();
+      await chargerVentes();
     }
 
-    function addSelectedProductToCart() {
-      const prodId = document.getElementById("productSelect").value;
-      const qty = Math.max(1, parseInt(document.getElementById("qtyInput").value, 10) || 1);
-      const prod = productsCache.find((p) => String(p.id) === String(prodId));
-      if (!prod) return;
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const statusEl = document.getElementById("login-status");
+      setStatus(statusEl, "Connexion en cours...");
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
 
-      const existing = cart.find((item) => String(item.id) === String(prod.id));
-      if (existing) {
-        existing.qty += qty;
-      } else {
-        cart.push({ id: prod.id, nom: prod.nom, prix: Number(prod.prix) || 0, qty });
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        setStatus(statusEl, "Échec de connexion : " + error.message, true);
+        return;
       }
-      document.getElementById("qtyInput").value = "1";
-      renderCart();
+      setStatus(statusEl, "");
+      await initSession();
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      cartItems = [];
+      lastReceiptData = null;
+      document.getElementById("last-receipt-box").classList.add("hidden");
+      adminPagesUnlocked = false;
+      adminActivePage = "vente";
+      await sb.auth.signOut();
+      await initSession();
+    });
+
+    async function chargerProduits() {
+      const { data, error } = await sb
+        .from("produits")
+        .select("*")
+        .order("nom", { ascending: true });
+
+      if (error) {
+        setStatus(document.getElementById("sale-status"), "Erreur produits : " + error.message, true);
+        return;
+      }
+      produitsCache = data || [];
+
+      const select = document.getElementById("sale-product");
+      const currentSelected = select.value;
+      select.innerHTML = '<option value="">Sélectionner un produit</option>' +
+        produitsCache.map(p =>
+          `<option value="${p.id}">${escapeHtml(p.nom)}</option>`
+        ).join("");
+      if (currentSelected && produitsCache.some(p => String(p.id) === String(currentSelected))) {
+        select.value = currentSelected;
+      }
+      refreshFieldStyles();
+
+      if (currentRole !== "super_admin") {
+        const userBody = document.getElementById("user-thresholds-body");
+        if (!produitsCache.length) {
+          userBody.innerHTML = '<tr><td colspan="4">Aucun produit disponible.</td></tr>';
+        } else {
+          userBody.innerHTML = produitsCache.map(p => {
+            const seuil = Number(p.seuil_alerte ?? 5);
+            const bas = Number(p.quantite) <= seuil;
+            return `
+              <tr>
+                <td><strong>${escapeHtml(p.nom)}</strong></td>
+                <td>${p.quantite}</td>
+                <td>${seuil}</td>
+                <td>${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">Normal</span>'}</td>
+              </tr>
+            `;
+          }).join("");
+        }
+      }
+
+      if (currentRole === "super_admin") {
+        const produitsEnAlerte = produitsCache.filter(
+          p => Number(p.quantite) <= Number(p.seuil_alerte ?? 5)
+        );
+        if (produitsEnAlerte.length > 0) {
+          const noms = produitsEnAlerte
+            .map(p => `${p.nom} (${p.quantite}/${p.seuil_alerte ?? 5})`)
+            .join(", ");
+          lowStockBanner.textContent = `Alerte stock bas (${produitsEnAlerte.length}) : ${noms}`;
+          lowStockBanner.classList.remove("hidden");
+        } else {
+          lowStockBanner.classList.add("hidden");
+        }
+
+        const stockBody = document.getElementById("stock-body");
+        if (!produitsCache.length) {
+          stockBody.innerHTML = '<tr><td colspan="6">Aucun produit en stock.</td></tr>';
+        } else {
+          stockBody.innerHTML = produitsCache.map(p => {
+            const seuil = Number(p.seuil_alerte ?? 5);
+            const bas = Number(p.quantite) <= seuil;
+            return `
+              <tr>
+                <td><strong>${escapeHtml(p.nom)}</strong></td>
+                <td>${p.quantite}</td>
+                <td class="right">
+                  <div class="seuil-box" style="display:flex; justify-content:flex-end; align-items:center; gap:6px;">
+                    <input id="seuil-input-${p.id}" class="small-input" type="number" min="0" value="${seuil}" />
+                    <button class="secondary" type="button" onclick="majSeuil(${p.id})">Valider</button>
+                  </div>
+                </td>
+                <td>${Number(p.prix_initial ?? p.prix ?? 0).toFixed(2)}</td>
+                <td>${bas ? '<span class="pill-low">Stock bas</span>' : '<span class="pill-ok">Normal</span>'}</td>
+                <td class="right">
+                  <div class="row-actions">
+                    <input id="arrivage-input-${p.id}" class="small-input" type="number" min="1" step="1" placeholder="+Qté" />
+                    <button class="secondary" type="button" onclick="ajouterArrivage(${p.id})">Ajouter</button>
+                    <button class="secondary" type="button" onclick="ajustStock(${p.id}, ${Number(p.quantite) - 1})">-1</button>
+                    <button class="danger" type="button" onclick="supprimerProduit(${p.id})">Supprimer</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join("");
+          refreshFieldStyles();
+        }
+      }
     }
 
     function renderCart() {
-      const tbody = document.getElementById("cartBody");
-      tbody.innerHTML = "";
-      let total = 0;
+      const cartBody = document.getElementById("cart-body");
+      const previewEl = document.getElementById("sale-preview");
 
-      cart.forEach((item, idx) => {
-        const sub = item.prix * item.qty;
-        total += sub;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${item.nom}</td>
+      if (!cartItems.length) {
+        cartBody.innerHTML = '<tr><td colspan="4">Aucun produit ajouté à la vente.</td></tr>';
+        previewEl.textContent = "";
+        return;
+      }
+
+      const grandTotal = cartItems.reduce((acc, item) => acc + item.qty * item.prixVente, 0);
+      cartBody.innerHTML = cartItems.map((item, index) => `
+        <tr>
+          <td><strong>${escapeHtml(item.nom)}</strong></td>
           <td>${item.qty}</td>
-          <td>${item.prix}</td>
-          <td>${sub}</td>
-          <td><button class="danger small" type="button" data-remove-idx="${idx}">X</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
+          <td>${item.prixVente.toFixed(2)}</td>
+          <td class="right">
+            <div class="row-actions">
+              <button class="danger" type="button" onclick="retirerDuPanier(${index})">Retirer</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
 
-      tbody.querySelectorAll("[data-remove-idx]").forEach((b) => {
-        b.addEventListener("click", () => {
-          cart.splice(Number(b.dataset.removeIdx), 1);
-          renderCart();
-        });
-      });
-
-      document.getElementById("cartTotalLine").textContent = `Total : ${total}`;
+      previewEl.textContent = `Total de la vente (${cartItems.length} article${cartItems.length > 1 ? "s" : ""}) : ${grandTotal.toFixed(2)}`;
     }
 
-    document.getElementById("addToCartBtn").addEventListener("click", addSelectedProductToCart);
-    document.getElementById("qtyInput").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        addSelectedProductToCart();
+    window.retirerDuPanier = (index) => {
+      cartItems.splice(index, 1);
+      renderCart();
+    };
+
+    function ajouterProduitLigne() {
+      const cartStatus = document.getElementById("cart-status");
+      const prodSelect = document.getElementById("sale-product");
+      const qtyInput = document.getElementById("sale-qty");
+      const priceInput = document.getElementById("sale-price");
+
+      const prodIdRaw = prodSelect.value;
+      const qtyRaw = qtyInput.value.trim();
+      const priceRaw = priceInput.value.trim();
+
+      if (!prodIdRaw) {
+        setStatus(cartStatus, "Veuillez sélectionner un produit.", true);
+        return false;
+      }
+      if (qtyRaw === "" || priceRaw === "") {
+        setStatus(cartStatus, "Saisissez la quantité et le prix.", true);
+        return false;
+      }
+
+      const prodId = Number(prodIdRaw);
+      const qty = Number(qtyRaw);
+      const prixVente = Number(priceRaw);
+      const produit = produitsCache.find(p => Number(p.id) === prodId);
+
+      if (!produit) {
+        setStatus(cartStatus, "Produit introuvable.", true);
+        return false;
+      }
+      if (!Number.isInteger(qty) || qty <= 0) {
+        setStatus(cartStatus, "La quantité vendue doit être supérieure à 0.", true);
+        return false;
+      }
+      if (Number.isNaN(prixVente) || prixVente < 0) {
+        setStatus(cartStatus, "Le prix de vente unitaire doit être valide.", true);
+        return false;
+      }
+
+      const dejaDansPanier = cartItems
+        .filter(i => Number(i.produitId) === prodId)
+        .reduce((sum, i) => sum + i.qty, 0);
+
+      if (dejaDansPanier + qty > Number(produit.quantite)) {
+        setStatus(cartStatus, `Stock insuffisant pour ${produit.nom} (disponible : ${produit.quantite}).`, true);
+        return false;
+      }
+
+      cartItems.push({
+        produitId: produit.id,
+        nom: produit.nom,
+        qty,
+        prixVente,
+        prixInitial: Number(produit.prix_initial ?? produit.prix ?? 0)
+      });
+
+      prodSelect.value = "";
+      qtyInput.value = "";
+      priceInput.value = "";
+      delete qtyInput.dataset.clearedOnce;
+      delete priceInput.dataset.clearedOnce;
+      refreshFieldStyles();
+      setStatus(cartStatus, "Produit ajouté à la vente. Vous pouvez en ajouter un autre.");
+      renderCart();
+      prodSelect.focus();
+      return true;
+    }
+
+    document.getElementById("cart-add-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      ajouterProduitLigne();
+    });
+
+    ["sale-product", "sale-qty", "sale-price"].forEach(id => {
+      document.getElementById(id).addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          ajouterProduitLigne();
+        }
+      });
+    });
+
+    document.getElementById("validate-sale-btn").addEventListener("click", async () => {
+      const statusEl = document.getElementById("sale-status");
+      const phoneInput = document.getElementById("sale-client-phone");
+      const phoneRaw = phoneInput.value.trim();
+
+      if (phoneRaw !== "" && !/^\d{10}$/.test(phoneRaw)) {
+        setStatus(statusEl, "Le numéro de téléphone doit contenir 10 chiffres (ou rester vide).", true);
+        phoneInput.focus();
+        return;
+      }
+
+      const hasPendingDraft =
+        document.getElementById("sale-product").value !== "" ||
+        document.getElementById("sale-qty").value.trim() !== "" ||
+        document.getElementById("sale-price").value.trim() !== "";
+
+      if (hasPendingDraft) {
+        const added = ajouterProduitLigne();
+        if (!added) return;
+      }
+
+      if (!cartItems.length) {
+        setStatus(statusEl, "Ajoutez au moins un produit avant de valider la vente.", true);
+        return;
+      }
+
+      setStatus(statusEl, "Validation de la vente en cours...");
+
+      for (const item of cartItems) {
+        const produit = produitsCache.find(p => Number(p.id) === Number(item.produitId));
+        if (!produit || item.qty > Number(produit.quantite)) {
+          setStatus(statusEl, `Stock insuffisant pour ${item.nom}.`, true);
+          return;
+        }
+      }
+
+      const lignesVentes = cartItems.map(item => ({
+        produit_id: item.produitId,
+        nom_produit: item.nom,
+        quantite_vendue: item.qty,
+        prix_initial: item.prixInitial,
+        prix_vente: item.prixVente,
+        total_vente: item.qty * item.prixVente,
+        telephone_client: phoneRaw || null,
+        vendu_par: currentUser.id
+      }));
+
+      const { error: saleErr } = await sb.from("ventes").insert(lignesVentes);
+      if (saleErr) {
+        setStatus(statusEl, "Erreur d'enregistrement de la vente : " + saleErr.message, true);
+        return;
+      }
+
+      for (const item of cartItems) {
+        const produit = produitsCache.find(p => Number(p.id) === Number(item.produitId));
+        const nouveauStock = Number(produit.quantite) - item.qty;
+        const { error: stockErr } = await sb
+          .from("produits")
+          .update({ quantite: nouveauStock })
+          .eq("id", item.produitId);
+
+        if (stockErr) {
+          setStatus(statusEl, "Vente ajoutée, mais erreur mise à jour stock : " + stockErr.message, true);
+          return;
+        }
+      }
+
+      const totalCommande = cartItems.reduce((acc, item) => acc + item.qty * item.prixVente, 0);
+      lastReceiptData = {
+        dateStr: new Date().toLocaleString("fr-FR", {
+          day: "2-digit", month: "2-digit", year: "numeric",
+          hour: "2-digit", minute: "2-digit"
+        }),
+        phone: phoneRaw,
+        items: [...cartItems],
+        total: totalCommande
+      };
+
+      const receiptBodyLines = lastReceiptData.items.map(item =>
+        `• ${item.nom} : ${item.qty} x ${item.prixVente.toFixed(2)} = ${(item.qty * item.prixVente).toFixed(2)}`
+      ).join("\n");
+
+      document.getElementById("last-receipt-text").textContent = [
+        `Date : ${lastReceiptData.dateStr}`,
+        lastReceiptData.phone ? `Téléphone : ${lastReceiptData.phone}` : null,
+        "Articles :",
+        receiptBodyLines,
+        "------------------------",
+        `TOTAL PAYÉ : ${lastReceiptData.total.toFixed(2)}`,
+        "",
+        "Merci d'être passé chez PBK Horizon!"
+      ].filter(Boolean).join("\n");
+
+      document.getElementById("last-receipt-box").classList.remove("hidden");
+
+      cartItems = [];
+      phoneInput.value = "";
+      document.getElementById("cart-status").textContent = "";
+      refreshFieldStyles();
+      renderCart();
+      setStatus(statusEl, "Vente validée et stock mis à jour.");
+      await chargerProduits();
+      await chargerVentes();
+    });
+
+    document.getElementById("send-whatsapp-btn").addEventListener("click", () => {
+      if (!lastReceiptData) return;
+      const text = encodeURIComponent(buildWhatsAppReceiptText(lastReceiptData));
+      const waNumber = formatWhatsAppNumber(lastReceiptData.phone);
+      const url = waNumber
+        ? `https://wa.me/${waNumber}?text=${text}`
+        : `https://wa.me/?text=${text}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    });
+
+    document.getElementById("copy-receipt-btn").addEventListener("click", async () => {
+      if (!lastReceiptData) return;
+      try {
+        await navigator.clipboard.writeText(buildWhatsAppReceiptText(lastReceiptData));
+        setStatus(document.getElementById("sale-status"), "Reçu copié dans le presse-papiers.");
+      } catch {
+        setStatus(document.getElementById("sale-status"), "Impossible de copier automatiquement.", true);
       }
     });
 
-    document.getElementById("submitSaleBtn").addEventListener("click", async () => {
-      const msg = document.getElementById("saleMessage");
-      msg.textContent = "";
-      const phone = document.getElementById("clientPhone").value.trim();
+    function getTargetDayStr() {
+      const dateInput = document.getElementById("summary-date").value;
+      return dateInput || toLocalDateStr(new Date());
+    }
 
-      if (!/^\d{10}$/.test(phone)) {
-        msg.textContent = "Saisissez un numéro de téléphone à 10 chiffres.";
+    function getTableVentes() {
+      const phoneQuery = document.getElementById("search-phone-input").value.trim();
+
+      if (phoneQuery !== "") {
+        return ventesCache.filter(v =>
+          String(v.telephone_client || "").includes(phoneQuery)
+        );
+      }
+
+      if (viewAllDays) return ventesCache;
+      const targetDay = getTargetDayStr();
+      return ventesCache.filter(v => {
+        if (!v.created_at) return false;
+        return toLocalDateStr(new Date(v.created_at)) === targetDay;
+      });
+    }
+
+    function updateFooterSummary() {
+      const targetDay = getTargetDayStr();
+      document.getElementById("footer-date").textContent = `Date : ${targetDay}`;
+
+      if (!showTotalsInFooter) {
+        document.getElementById("footer-total-sold").textContent = "Total vendu de la journée : 0.00";
+        document.getElementById("footer-total-gain").textContent = "Total gains de la journée : 0.00";
         return;
       }
-      if (!cart.length) {
-        msg.textContent = "Ajoutez au moins un produit au panier.";
+
+      const daySales = ventesCache.filter(v => {
+        if (!v.created_at) return false;
+        return toLocalDateStr(new Date(v.created_at)) === targetDay;
+      });
+
+      const totalVenduJournee = daySales.reduce((acc, v) => {
+        const qte = Number(v.quantite_vendue) || 0;
+        const pv = Number(v.prix_vente) || 0;
+        return acc + (qte * pv);
+      }, 0);
+
+      const totalGainsJournee = daySales.reduce((acc, v) => {
+        const qte = Number(v.quantite_vendue) || 0;
+        const pv = Number(v.prix_vente) || 0;
+        const pi = Number(v.prix_initial) || 0;
+        return acc + ((pv - pi) * qte);
+      }, 0);
+
+      document.getElementById("footer-total-sold").textContent = `Total vendu de la journée : ${totalVenduJournee.toFixed(2)}`;
+      document.getElementById("footer-total-gain").textContent = `Total gains de la journée : ${totalGainsJournee.toFixed(2)}`;
+    }
+
+    document.getElementById("clear-phone-search-btn").addEventListener("click", () => {
+      document.getElementById("search-phone-input").value = "";
+      refreshFieldStyles();
+      renderVentesTable();
+    });
+
+    document.getElementById("calc-summary-btn").addEventListener("click", () => {
+      if (!document.getElementById("summary-date").value) {
+        document.getElementById("summary-date").value = toLocalDateStr(new Date());
+      }
+      viewAllDays = false;
+      showTotalsInFooter = true;
+      refreshFieldStyles();
+      renderVentesTable();
+      updateFooterSummary();
+    });
+
+    document.getElementById("summary-date").addEventListener("change", () => {
+      viewAllDays = false;
+      showTotalsInFooter = true;
+      renderVentesTable();
+      updateFooterSummary();
+    });
+
+    document.getElementById("filter-today-btn").addEventListener("click", () => {
+      document.getElementById("summary-date").value = toLocalDateStr(new Date());
+      viewAllDays = false;
+      showTotalsInFooter = true;
+      refreshFieldStyles();
+      renderVentesTable();
+      updateFooterSummary();
+    });
+
+    document.getElementById("filter-yesterday-btn").addEventListener("click", () => {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      document.getElementById("summary-date").value = toLocalDateStr(d);
+      viewAllDays = false;
+      showTotalsInFooter = true;
+      refreshFieldStyles();
+      renderVentesTable();
+      updateFooterSummary();
+    });
+
+    document.getElementById("filter-all-btn").addEventListener("click", () => {
+      viewAllDays = true;
+      refreshFieldStyles();
+      renderVentesTable();
+      updateFooterSummary();
+    });
+
+    function renderVentesTable() {
+      const salesBody = document.getElementById("sales-body");
+      const colsCount = currentRole === "super_admin" ? 7 : 5;
+      const filtered = getTableVentes();
+
+      if (!filtered.length) {
+        salesBody.innerHTML = `<tr><td colspan="${colsCount}">Aucune vente enregistrée pour ce critère.</td></tr>`;
         return;
       }
 
-      const total = cart.reduce((sum, i) => sum + i.prix * i.qty, 0);
-      const articlesText = cart.map((i) => `${i.nom} x${i.qty}`).join(", ");
+      const byDay = new Map();
+      for (const v of filtered) {
+        const dtObj = new Date(v.created_at);
+        const dayKey = toLocalDateStr(dtObj);
+        if (!byDay.has(dayKey)) byDay.set(dayKey, []);
+        byDay.get(dayKey).push(v);
+      }
 
-      const { error } = await sb.from("ventes").insert([{
-        telephone: phone,
-        articles: articlesText,
-        montant: total
+      let html = "";
+      let receiptCounter = 0;
+
+      for (const [dayKey, daySales] of byDay.entries()) {
+        html += `<tr class="group-row"><td colspan="${colsCount}">Jour : ${escapeHtml(dayKey)}</td></tr>`;
+
+        const byReceiptTime = new Map();
+        for (const v of daySales) {
+          const dtObj = new Date(v.created_at);
+          const minuteKey = dtObj.toLocaleString("fr-FR", {
+            day: "2-digit", month: "2-digit", year: "numeric",
+            hour: "2-digit", minute: "2-digit"
+          });
+          if (!byReceiptTime.has(minuteKey)) byReceiptTime.set(minuteKey, []);
+          byReceiptTime.get(minuteKey).push(v);
+        }
+
+        for (const [minuteKey, items] of byReceiptTime.entries()) {
+          receiptCounter += 1;
+          const clientPhone = items[0]?.telephone_client ? ` — Tél : ${escapeHtml(items[0].telephone_client)}` : "";
+          html += `<tr class="receipt-row"><td colspan="${colsCount}">Reçu #${receiptCounter} — ${escapeHtml(minuteKey)}${clientPhone}</td></tr>`;
+
+          for (const v of items) {
+            const heurePrecise = new Date(v.created_at).toLocaleString("fr-FR", {
+              day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"
+            });
+            html += `
+              <tr>
+                <td>${heurePrecise}</td>
+                <td>${v.telephone_client ? escapeHtml(v.telephone_client) : "-"}</td>
+                <td><strong>${escapeHtml(v.nom_produit)}</strong></td>
+                <td>${v.quantite_vendue}</td>
+                ${currentRole === "super_admin" ? `<td>${Number(v.prix_initial ?? 0).toFixed(2)}</td>` : ""}
+                <td>${Number(v.prix_vente).toFixed(2)}</td>
+                ${currentRole === "super_admin" ? `<td class="right"><div class="row-actions"><button class="danger" type="button" onclick="supprimerVente(${v.id})">Supprimer</button></div></td>` : ""}
+              </tr>
+            `;
+          }
+        }
+      }
+
+      salesBody.innerHTML = html;
+    }
+
+    async function chargerVentes() {
+      const salesBody = document.getElementById("sales-body");
+      const colsCount = currentRole === "super_admin" ? 7 : 5;
+      const { data, error } = await sb
+        .from("ventes")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (error) {
+        salesBody.innerHTML = `<tr><td colspan="${colsCount}">Erreur : ${escapeHtml(error.message)}</td></tr>`;
+        return;
+      }
+      ventesCache = data || [];
+      renderVentesTable();
+      updateFooterSummary();
+    }
+
+    document.getElementById("refresh-sales-btn").addEventListener("click", chargerVentes);
+
+    document.getElementById("product-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("prod-status");
+
+      const nom = document.getElementById("prod-name").value.trim();
+      const qtyRaw = document.getElementById("prod-qty").value.trim();
+      const initPriceRaw = document.getElementById("prod-init-price").value.trim();
+      const alertRaw = document.getElementById("prod-alert").value.trim();
+      const adminPass = document.getElementById("prod-admin-pass").value;
+
+      if (!nom || qtyRaw === "" || initPriceRaw === "" || alertRaw === "") {
+        setStatus(statusEl, "Veuillez renseigner tous les champs du produit.", true);
+        return;
+      }
+      if (adminPass !== SUPER_ADMIN_CONFIRM_PASSWORD) {
+        setStatus(statusEl, "Mot de passe Super Admin incorrect. Ajout refusé.", true);
+        return;
+      }
+
+      const quantite = Number(qtyRaw);
+      const prixInitial = Number(initPriceRaw);
+      const seuilAlerte = Number(alertRaw);
+
+      const { error } = await sb.from("produits").insert([{
+        nom,
+        quantite,
+        prix_initial: prixInitial,
+        prix: prixInitial,
+        seuil_alerte: seuilAlerte
       }]);
 
       if (error) {
-        msg.textContent = error.message;
+        setStatus(statusEl, "Erreur ajout produit : " + error.message, true);
         return;
       }
-
-      for (const item of cart) {
-        const prod = productsCache.find((p) => String(p.id) === String(item.id));
-        if (prod) {
-          const nextStock = Math.max(0, (Number(prod.stock) || 0) - item.qty);
-          await sb.from("produits").update({ stock: nextStock }).eq("id", prod.id);
-        }
-      }
-
-      const receiptLines = [
-        "PBK Horizon — Reçu",
-        `Téléphone : ${phone}`,
-        ...cart.map((i) => `- ${i.nom} x${i.qty} : ${i.prix * i.qty}`),
-        `Total : ${total}`
-      ];
-
-      cart = [];
-      renderCart();
-      document.getElementById("clientPhone").value = "";
-      msg.textContent = "Vente enregistrée.";
-
-      showReceiptForTwoMinutes(phone, receiptLines.join("\n"));
-      await loadProducts();
-      await loadSales();
+      document.getElementById("product-form").reset();
+      refreshFieldStyles();
+      setStatus(statusEl, "Produit ajouté au catalogue.");
+      await chargerProduits();
     });
 
-    document.getElementById("sendWhatsappBtn").addEventListener("click", () => {
-      if (!currentReceiptText) return;
-      const digitsOnly = currentReceiptPhone.replace(/\D/g, "");
-      const waUrl = `https://wa.me/${digitsOnly}?text=${encodeURIComponent(currentReceiptText)}`;
-      window.open(waUrl, "_blank", "noopener,noreferrer");
-      // Cacher immédiatement le reçu dès l'envoi
-      clearReceiptDisplay();
-    });
-
-    document.getElementById("hideReceiptBtn").addEventListener("click", () => {
-      clearReceiptDisplay();
-    });
-
-    async function loadSales(filterPhone = "") {
-      let query = sb.from("ventes").select("*").order("created_at", { ascending: false }).limit(500);
-      if (filterPhone) {
-        query = query.eq("telephone", filterPhone);
-      }
-
-      const { data } = await query;
-      const rows = data || [];
-      const tbody = document.getElementById("salesTableBody");
-      tbody.innerHTML = "";
-
-      const todayKey = new Date().toISOString().slice(0, 10);
-      let dailyTotal = 0;
-      let dailyCount = 0;
-
-      rows.forEach((v) => {
-        const created = v.created_at ? new Date(v.created_at) : new Date();
-        const isToday = created.toISOString().slice(0, 10) === todayKey;
-        const amt = Number(v.montant) || 0;
-        if (isToday) {
-          dailyTotal += amt;
-          dailyCount += 1;
-        }
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${created.toLocaleString("fr-FR")}</td>
-          <td>${v.telephone || ""}</td>
-          <td>${v.articles || ""}</td>
-          <td>${amt}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById("dailySalesTotal").textContent = String(dailyTotal);
-      document.getElementById("dailySalesCount").textContent = String(dailyCount);
-    }
-
-    document.getElementById("searchPhoneInput").addEventListener("input", async (e) => {
-      const val = e.target.value.replace(/\D/g, "").slice(0, 10);
-      e.target.value = val;
-      if (val.length === 10) {
-        await loadSales(val);
-      } else if (val.length === 0) {
-        await loadSales("");
-      }
-    });
-
-    document.getElementById("unlockEditBtn").addEventListener("click", async () => {
-      const code = document.getElementById("editCodeInput").value;
-      const msg = document.getElementById("editAuthMessage");
-      const digest = await sha256Hex(code);
-
-      if (digest === PRODUCT_EDIT_DIGEST) {
-        editUnlocked = true;
-        document.getElementById("editCodeInput").value = "";
-        document.getElementById("productEditorForm").classList.remove("hidden");
-        msg.textContent = "Modification débloquée.";
-      } else {
-        editUnlocked = false;
-        document.getElementById("productEditorForm").classList.add("hidden");
-        msg.textContent = "Code incorrect.";
-      }
-    });
-
-    document.getElementById("saveProductBtn").addEventListener("click", async () => {
-      const msg = document.getElementById("productSaveMessage");
-      if (!editUnlocked) {
-        msg.textContent = "Débloquez d'abord la modification.";
+    window.majSeuil = async (id) => {
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("stock-table-status");
+      const val = Number(document.getElementById(`seuil-input-${id}`).value);
+      if (Number.isNaN(val) || val < 0) return;
+      const { error } = await sb.from("produits").update({ seuil_alerte: val }).eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur mise à jour seuil : " + error.message, true);
         return;
       }
+      setStatus(statusEl, "Seuil d'alerte mis à jour.");
+      await chargerProduits();
+    };
 
-      const nom = document.getElementById("prodNameInput").value.trim();
-      const prix = Number(document.getElementById("prodPriceInput").value);
-      const stock = parseInt(document.getElementById("prodStockInput").value, 10);
-
-      if (!nom || Number.isNaN(prix) || Number.isNaN(stock)) {
-        msg.textContent = "Renseignez un nom, un prix et un stock valides.";
+    window.ajouterArrivage = async (id) => {
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("stock-table-status");
+      const inputEl = document.getElementById(`arrivage-input-${id}`);
+      const ajout = Number(inputEl.value.trim());
+      if (!Number.isInteger(ajout) || ajout <= 0) {
+        setStatus(statusEl, "Saisissez une quantité d'arrivage supérieure à 0.", true);
         return;
       }
+      const produit = produitsCache.find(p => Number(p.id) === Number(id));
+      if (!produit) return;
 
-      const existing = productsCache.find((p) => p.nom.toLowerCase() === nom.toLowerCase());
-      const res = existing
-        ? await sb.from("produits").update({ prix, stock }).eq("id", existing.id)
-        : await sb.from("produits").insert([{ nom, prix, stock }]);
-
-      if (res.error) {
-        msg.textContent = res.error.message;
+      const nouvelleQte = Number(produit.quantite) + ajout;
+      const { error } = await sb.from("produits").update({ quantite: nouvelleQte }).eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur arrivage : " + error.message, true);
         return;
       }
+      inputEl.value = "";
+      refreshFieldStyles();
+      setStatus(statusEl, `Arrivage de +${ajout} ajouté à ${produit.nom}.`);
+      await chargerProduits();
+    };
 
-      msg.textContent = "Produit enregistré.";
-      document.getElementById("prodNameInput").value = "";
-      document.getElementById("prodPriceInput").value = "";
-      document.getElementById("prodStockInput").value = "";
-      await loadProducts();
-    });
+    window.ajustStock = async (id, nouvelleQte) => {
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("stock-table-status");
+      if (nouvelleQte < 0) {
+        setStatus(statusEl, "Le stock ne peut pas être négatif.", true);
+        return;
+      }
+      const { error } = await sb.from("produits").update({ quantite: nouvelleQte }).eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur mise à jour stock : " + error.message, true);
+        return;
+      }
+      await chargerProduits();
+    };
+
+    window.supprimerProduit = async (id) => {
+      if (currentRole !== "super_admin") return;
+      const statusEl = document.getElementById("stock-table-status");
+      const { error } = await sb.from("produits").delete().eq("id", id);
+      if (error) {
+        setStatus(statusEl, "Erreur suppression produit : " + error.message, true);
+        return;
+      }
+      await chargerProduits();
+    };
+
+    window.supprimerVente = async (id) => {
+      if (currentRole !== "super_admin") return;
+      const { error } = await sb.from("ventes").delete().eq("id", id);
+      if (error) {
+        setStatus(document.getElementById("sale-status"), "Erreur suppression vente : " + error.message, true);
+        return;
+      }
+      await chargerVentes();
+    };
+
+    initSession();
   </script>
 </body>
 </html>
